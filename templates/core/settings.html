@@ -1,0 +1,27 @@
+{% extends 'core/base.html' %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}Platform configuration and preferences{% endblock %}
+{% block content %}
+<div class="section-header"><div><h1>Settings</h1><p>Manage platform configuration</p></div></div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><div class="card-header-left"><h3>API Configuration</h3><p>Keys and external service settings</p></div></div>
+    <div class="card-body-pad">
+      <div class="fg"><label>Anthropic API Key</label><input type="password" value="sk-ant-••••••••••••••••" readonly style="font-family:monospace;"></div>
+      <div class="fg"><label>IoT API Secret</label><input type="password" value="iot-secret-••••" readonly style="font-family:monospace;"></div>
+      <div class="fg"><label>Platform Timezone</label><select><option>Asia/Karachi (PKT)</option><option>UTC</option></select></div>
+      <button class="btn btn-primary">Save Settings</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-header-left"><h3>Admin Account</h3><p>Update your admin credentials</p></div></div>
+    <div class="card-body-pad">
+      <div class="fg"><label>Full Name</label><input type="text" value="{{ request.user.get_full_name|default:'Admin User' }}"></div>
+      <div class="fg"><label>Email</label><input type="email" value="{{ request.user.email }}"></div>
+      <div class="fg"><label>New Password</label><input type="password" placeholder="Leave blank to keep current"></div>
+      <button class="btn btn-primary">Update Account</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

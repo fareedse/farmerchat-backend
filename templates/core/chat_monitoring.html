@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% block title %}Chat Monitoring{% endblock %}
+{% block page_title %}Chat Monitoring{% endblock %}
+{% block page_subtitle %}Live view of all farmer conversations{% endblock %}
+{% block content %}
+<div class="section-header"><div><h1>Chat Monitoring</h1><p>Monitor all active and past chat sessions.</p></div></div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Session #</th><th>Farmer</th><th>Type</th><th>Topic</th><th>Messages</th><th>Status</th><th>Started</th></tr></thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td style="color:var(--text-muted);">#{{ s.pk }}</td>
+          <td><strong>{{ s.farmer.get_full_name|default:s.farmer.username }}</strong></td>
+          <td><span class="badge badge-blue">{{ s.get_session_type_display }}</span></td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.topic|default:"General query" }}</td>
+          <td>{{ s.message_count }}</td>
+          <td><span class="badge {% if s.status == 'active' %}badge-green{% else %}badge-gray{% endif %}">{{ s.get_status_display }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ s.started_at|timesince }} ago</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No chat sessions yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

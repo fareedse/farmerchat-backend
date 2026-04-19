@@ -1,0 +1,60 @@
+{% extends 'core/base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics & Reports{% endblock %}
+{% block page_subtitle %}Platform insights and performance metrics{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><h1>Analytics & Reports</h1><p>Platform-wide data insights</p></div>
+  <button class="btn btn-outline"><i class="ph ph-download-simple"></i> Export Report</button>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><div class="card-header-left"><h3>Top Crops by Market Entries</h3></div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Crop</th><th>Entries</th><th>Avg Price (PKR)</th></tr></thead>
+        <tbody>
+          {% for c in top_crops %}
+          <tr>
+            <td><strong>{{ c.crop_name }}</strong></td>
+            <td>{{ c.count }}</td>
+            <td><span class="price-chip">{{ c.avg_price|floatformat:0 }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);">No data yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-header-left"><h3>Chat Language Distribution</h3></div></div>
+    <div class="card-body-pad">
+      <canvas id="langChart" style="max-height:200px;"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const langData = {{ chats_by_lang|safe }};
+new Chart(document.getElementById('langChart'), {
+  type: 'doughnut',
+  data: {
+    labels: langData.length ? langData.map(d => d.language) : ['Urdu','Punjabi','English'],
+    datasets: [{
+      data: langData.length ? langData.map(d => d.count) : [60, 25, 15],
+      backgroundColor: ['#2ECC71','#F59E0B','#3B82F6','#8B5CF6'],
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 16 } } }
+  }
+});
+</script>
+{% endblock %}

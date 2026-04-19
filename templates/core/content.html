@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}
+{% block title %}Content Management{% endblock %}
+{% block page_title %}Content Management{% endblock %}
+{% block page_subtitle %}Manage articles, announcements, and farming tips{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><h1>Content Management</h1><p>{{ items|length }} content items</p></div>
+  <button class="btn btn-primary"><i class="ph ph-plus"></i> New Content</button>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Title</th><th>Type</th><th>Region</th><th>Published</th><th>Created By</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+          <td><strong>{{ item.title }}</strong></td>
+          <td><span class="badge badge-blue">{{ item.get_item_type_display }}</span></td>
+          <td>{{ item.region }}</td>
+          <td>{% if item.is_published %}<span class="badge badge-green">Published</span>{% else %}<span class="badge badge-gray">Draft</span>{% endif %}</td>
+          <td style="color:var(--text-muted);">{{ item.created_by.username|default:"Admin" }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ item.created_at|date:"M d, Y" }}</td>
+          <td>
+            <button class="tbl-action edit"><i class="ph ph-pencil-simple"></i></button>
+            <button class="tbl-action del"><i class="ph ph-trash"></i></button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">No content yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

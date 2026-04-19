@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+{% block title %}Farmer Database{% endblock %}
+{% block page_title %}Farmer Database{% endblock %}
+{% block page_subtitle %}All registered farmers on the FarmerChat platform{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><h1>Farmer Database</h1><p>{{ total }} registered farmers</p></div>
+  <form method="get" style="display:flex;gap:10px;">
+    <input name="q" value="{{ q }}" placeholder="Search name, region, crop…" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;">
+    <input name="region" value="{{ region }}" placeholder="Region…" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;width:140px;">
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Farmer</th><th>Region</th><th>Village</th><th>Primary Crop</th><th>Land (Acres)</th><th>Language</th><th>Verified</th><th>Joined</th></tr></thead>
+      <tbody>
+        {% for f in farmers %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:34px;height:34px;border-radius:50%;background:var(--green-pale);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">
+                {{ f.user.first_name|default:f.user.username|slice:":1"|upper }}
+              </div>
+              <div>
+                <strong>{{ f.user.get_full_name|default:f.user.username }}</strong>
+                <div style="font-size:11px;color:var(--text-muted);">{{ f.user.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ f.region|default:"—" }}</td>
+          <td style="color:var(--text-muted);">{{ f.village|default:"—" }}</td>
+          <td>{% if f.primary_crop %}<span class="badge badge-green">{{ f.primary_crop }}</span>{% else %}—{% endif %}</td>
+          <td style="font-weight:600;">{{ f.land_acres|default:"—" }}</td>
+          <td><span class="badge badge-blue">{{ f.get_language_display }}</span></td>
+          <td>{% if f.is_verified %}<span class="badge badge-green">✓ Yes</span>{% else %}<span class="badge badge-gray">No</span>{% endif %}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ f.joined_at|date:"M d, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);">No farmers registered yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

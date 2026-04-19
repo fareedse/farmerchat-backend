@@ -1,0 +1,215 @@
+{% extends 'core/base.html' %}
+{% block title %}Govt Schemes — FarmerChat Admin{% endblock %}
+{% block page_title %}Government Schemes{% endblock %}
+{% block page_subtitle %}Manage and publish agricultural aid programmes{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div>
+    <h1>Government Schemes</h1>
+    <p>Launch, manage, and publish subsidies and aid programmes for farmers.</p>
+  </div>
+  <button class="btn btn-primary" onclick="openNewSchemeModal()">
+    <i class="ph ph-plus"></i> Create Scheme
+  </button>
+</div>
+
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;">
+  <div class="stat-card">
+    <div class="stat-card-top"><div class="stat-icon blue"><i class="ph ph-stack"></i></div></div>
+    <div class="stat-val">{{ counts.all }}</div><div class="stat-label">Total Schemes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-top"><div class="stat-icon green"><i class="ph ph-check-circle"></i></div></div>
+    <div class="stat-val">{{ counts.active }}</div><div class="stat-label">Active</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-top"><div class="stat-icon amber"><i class="ph ph-clock"></i></div></div>
+    <div class="stat-val">{{ counts.review }}</div><div class="stat-label">Under Review</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-top"><div class="stat-icon violet"><i class="ph ph-file-dashed"></i></div></div>
+    <div class="stat-val">{{ counts.draft }}</div><div class="stat-label">Drafts</div>
+  </div>
+</div>
+
+<!-- Filter pills -->
+<div class="pill-filter">
+  <button class="pf {% if not active_filter %}on{% endif %}" onclick="filterSchemes('', this)">All Schemes</button>
+  <button class="pf {% if active_filter == 'active' %}on{% endif %}" onclick="filterSchemes('active', this)">Active</button>
+  <button class="pf {% if active_filter == 'review' %}on{% endif %}" onclick="filterSchemes('review', this)">Under Review</button>
+  <button class="pf {% if active_filter == 'draft' %}on{% endif %}" onclick="filterSchemes('draft', this)">Drafts</button>
+  <button class="pf {% if active_filter == 'expired' %}on{% endif %}" onclick="filterSchemes('expired', this)">Expired</button>
+</div>
+
+<!-- Schemes Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-left"><h3>All Schemes</h3><p>{{ schemes|length }} scheme{{ schemes|length|pluralize }}</p></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Title</th><th>Category</th><th>Region</th>
+          <th>Beneficiaries</th><th>Deadline</th><th>Status</th>
+          <th>Created By</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="schemes-tbody">
+        {% for s in schemes %}
+        <tr data-id="{{ s.pk }}" data-status="{{ s.status }}">
+          <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+          <td>
+            <strong>{{ s.title }}</strong>
+            {% if s.title_ur %}<div style="font-size:11px;color:var(--text-muted);direction:rtl;text-align:left;">{{ s.title_ur }}</div>{% endif %}
+          </td>
+          <td><span class="badge badge-blue">{{ s.get_category_display }}</span></td>
+          <td style="font-size:13px;">{{ s.target_region }}</td>
+          <td style="font-size:13px;font-weight:600;">{{ s.beneficiaries|default:"0" }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {% if s.deadline %}{{ s.deadline|date:"M d, Y" }}{% else %}Ongoing{% endif %}
+          </td>
+          <td>
+            <select onchange="updateStatus({{ s.pk }}, this.value)" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
+              {% for val, label in s.STATUS %}
+              <option value="{{ val }}" {% if s.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ s.created_by.username|default:"Admin" }}</td>
+          <td>
+            <button class="tbl-action edit" onclick="editScheme({{ s.pk }})"><i class="ph ph-pencil-simple"></i></button>
+            <button class="tbl-action del"  onclick="deleteScheme({{ s.pk }}, this)"><i class="ph ph-trash"></i></button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);">No schemes yet. Click "Create Scheme" to add one.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── CREATE / EDIT MODAL ───────────────────────────────── -->
+<div class="modal-overlay" id="scheme-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="scheme-modal-title">Create Government Scheme</h2>
+      <button class="close-btn" onclick="closeModal('scheme-modal')"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-scheme-id">
+      <div class="fg"><label>Scheme Title (English) *</label><input type="text" id="s-title" placeholder="e.g. Kissan Card Subsidy 2027"></div>
+      <div class="fg"><label>Title (Urdu)</label><input type="text" id="s-title-ur" placeholder="e.g. کسان کارڈ سبسڈی" dir="rtl"></div>
+      <div class="fg"><label>Description *</label><textarea id="s-desc" rows="3" placeholder="Explain the benefits, eligibility, and how to apply…"></textarea></div>
+      <div class="form-row">
+        <div class="fg">
+          <label>Category</label>
+          <select id="s-category">
+            <option value="subsidy">Financial Subsidy</option>
+            <option value="equipment">Equipment / Machinery</option>
+            <option value="water">Water Management</option>
+            <option value="seeds">Seeds & Fertilizer</option>
+            <option value="solar">Solar / Energy</option>
+            <option value="organic">Organic Farming</option>
+            <option value="insurance">Crop Insurance</option>
+            <option value="training">Training & Education</option>
+          </select>
+        </div>
+        <div class="fg"><label>Target Region</label><input type="text" id="s-region" placeholder="e.g. All Punjab"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Beneficiaries (count)</label><input type="number" id="s-beneficiaries" placeholder="e.g. 12400"></div>
+        <div class="fg"><label>Deadline</label><input type="date" id="s-deadline"></div>
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="s-status">
+          <option value="active">Active</option>
+          <option value="review">Under Review</option>
+          <option value="draft">Draft</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('scheme-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveScheme()"><i class="ph ph-paper-plane-tilt"></i> Publish Scheme</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let editingSchemeId = null;
+
+function filterSchemes(status, btn) {
+  document.querySelectorAll('.pf').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#schemes-tbody tr[data-id]').forEach(row => {
+    row.style.display = (!status || row.dataset.status === status) ? '' : 'none';
+  });
+}
+
+function openNewSchemeModal() {
+  editingSchemeId = null;
+  document.getElementById('scheme-modal-title').textContent = 'Create Government Scheme';
+  ['s-title','s-title-ur','s-desc','s-region','s-deadline'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('s-beneficiaries').value = '';
+  document.getElementById('s-status').value = 'draft';
+  openModal('scheme-modal');
+}
+
+function editScheme(id) {
+  editingSchemeId = id;
+  document.getElementById('scheme-modal-title').textContent = 'Edit Scheme';
+  toast('Load existing data into the form for editing.', 'success');
+  openModal('scheme-modal');
+}
+
+async function saveScheme() {
+  const title = document.getElementById('s-title').value.trim();
+  const desc  = document.getElementById('s-desc').value.trim();
+  if (!title || !desc) { toast('Title and Description are required.', 'error'); return; }
+
+  const payload = {
+    title,
+    title_ur:      document.getElementById('s-title-ur').value,
+    description:   desc,
+    category:      document.getElementById('s-category').value,
+    target_region: document.getElementById('s-region').value || 'All Regions',
+    beneficiaries: parseInt(document.getElementById('s-beneficiaries').value || 0),
+    deadline:      document.getElementById('s-deadline').value || null,
+    status:        document.getElementById('s-status').value,
+  };
+
+  const res = await api('/govt-schemes/create/', 'POST', payload);
+  if (res.success) {
+    toast(res.message, 'success');
+    closeModal('scheme-modal');
+    setTimeout(() => location.reload(), 800);
+  } else { toast(res.error || 'Error saving scheme.', 'error'); }
+}
+
+async function updateStatus(id, newStatus) {
+  const res = await api(`/govt-schemes/${id}/status/`, 'POST', { status: newStatus });
+  if (res.success) { toast('Status updated.', 'success'); }
+  else { toast('Failed to update status.', 'error'); }
+}
+
+async function deleteScheme(id, btn) {
+  if (!confirm('Delete this scheme permanently?')) return;
+  const res = await api(`/govt-schemes/${id}/delete/`, 'POST');
+  if (res.success) {
+    const row = btn.closest('tr');
+    row.style.opacity = '0'; row.style.transition = 'opacity 0.3s';
+    setTimeout(() => row.remove(), 300);
+    toast(res.message, 'success');
+  } else { toast(res.error, 'error'); }
+}
+</script>
+{% endblock %}
