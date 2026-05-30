@@ -1,6 +1,10 @@
-Django==5.0.4
-anthropic==0.28.0
-Pillow==10.3.0
-gunicorn==22.0.0
-python-dotenv==1.0.1
-# psycopg2-binary==2.9.9   # Uncomment for PostgreSQL
+Django
+gunicorn
+whitenoise
+django-cors-headers
+python-dotenv
+Pillow
+anthropic
+requests
+beautifulsoup4
+lxml

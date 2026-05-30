@@ -2,45 +2,102 @@
 {% block title %}Expert Management{% endblock %}
 {% block page_title %}Expert Management{% endblock %}
 {% block page_subtitle %}Manage agricultural experts on the platform{% endblock %}
+
 {% block content %}
+
 <div class="section-header">
-  <div><h1>Expert Management</h1><p>{{ experts|length }} registered experts</p></div>
-  <button class="btn btn-primary"><i class="ph ph-plus"></i> Add Expert</button>
+  <div>
+    <h1>Expert Management</h1>
+    <p>{{ experts|length }} registered expert{{ experts|length|pluralize }}</p>
+  </div>
+
+  <a href="/admin/core/expert/add/" class="btn btn-primary">
+    <i class="ph ph-plus"></i> Add Expert
+  </a>
 </div>
+
 <div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <h3>Agricultural Experts</h3>
+      <p>Review expert availability, specialization, ratings, and chat workload.</p>
+    </div>
+  </div>
+
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Expert</th><th>Specialization</th><th>Status</th><th>Rating</th><th>Total Chats</th><th>Joined</th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Expert</th>
+          <th>Specialization</th>
+          <th>Status</th>
+          <th>Rating</th>
+          <th>Total Chats</th>
+          <th>Bio</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+
       <tbody>
         {% for e in experts %}
         <tr>
-          <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+          <td style="color:var(--text-muted);font-size:12px;">
+            {{ forloop.counter }}
+          </td>
+
           <td>
             <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:34px;height:34px;border-radius:50%;background:var(--blue-pale);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">
+              <div style="width:34px;height:34px;border-radius:50%;background:var(--blue-pale);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">
                 {{ e.user.first_name|default:e.user.username|slice:":1"|upper }}
               </div>
+
               <div>
                 <strong>{{ e.user.get_full_name|default:e.user.username }}</strong>
-                <div style="font-size:11px;color:var(--text-muted);">{{ e.user.email }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">
+                  {{ e.user.email|default:"No email" }}
+                </div>
               </div>
             </div>
           </td>
-          <td><span class="badge badge-blue">{{ e.get_specialization_display }}</span></td>
+
+          <td>
+            <span class="badge badge-blue">{{ e.get_specialization_display }}</span>
+          </td>
+
           <td>
             <span class="badge {% if e.status == 'available' %}badge-green{% elif e.status == 'busy' %}badge-amber{% else %}badge-gray{% endif %}">
               {{ e.get_status_display }}
             </span>
           </td>
-          <td><strong>{{ e.rating }}</strong> <span style="color:var(--text-muted);font-size:12px;">/ 5.0</span></td>
-          <td style="font-weight:600;">{{ e.total_chats }}</td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ e.joined_at|date:"M d, Y" }}</td>
+
+          <td>
+            <strong>{{ e.rating }}</strong>
+            <span style="color:var(--text-muted);font-size:12px;">/ 5.0</span>
+          </td>
+
+          <td style="font-weight:600;">
+            {{ e.total_chats|default:"0" }}
+          </td>
+
+          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:12px;">
+            {{ e.bio|default:"No bio added"|truncatechars:80 }}
+          </td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ e.joined_at|date:"M d, Y" }}
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No experts registered yet.</td></tr>
+        <tr>
+          <td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No experts registered yet. Add experts from Django Admin.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
 {% endblock %}

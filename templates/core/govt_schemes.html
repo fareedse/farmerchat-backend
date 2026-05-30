@@ -19,19 +19,26 @@
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;">
   <div class="stat-card">
     <div class="stat-card-top"><div class="stat-icon blue"><i class="ph ph-stack"></i></div></div>
-    <div class="stat-val">{{ counts.all }}</div><div class="stat-label">Total Schemes</div>
+    <div class="stat-val">{{ counts.all }}</div>
+    <div class="stat-label">Total Schemes</div>
   </div>
+
   <div class="stat-card">
     <div class="stat-card-top"><div class="stat-icon green"><i class="ph ph-check-circle"></i></div></div>
-    <div class="stat-val">{{ counts.active }}</div><div class="stat-label">Active</div>
+    <div class="stat-val">{{ counts.active }}</div>
+    <div class="stat-label">Active</div>
   </div>
+
   <div class="stat-card">
     <div class="stat-card-top"><div class="stat-icon amber"><i class="ph ph-clock"></i></div></div>
-    <div class="stat-val">{{ counts.review }}</div><div class="stat-label">Under Review</div>
+    <div class="stat-val">{{ counts.review }}</div>
+    <div class="stat-label">Under Review</div>
   </div>
+
   <div class="stat-card">
     <div class="stat-card-top"><div class="stat-icon violet"><i class="ph ph-file-dashed"></i></div></div>
-    <div class="stat-val">{{ counts.draft }}</div><div class="stat-label">Drafts</div>
+    <div class="stat-val">{{ counts.draft }}</div>
+    <div class="stat-label">Drafts</div>
   </div>
 </div>
 
@@ -47,64 +54,136 @@
 <!-- Schemes Table -->
 <div class="card">
   <div class="card-header">
-    <div class="card-header-left"><h3>All Schemes</h3><p>{{ schemes|length }} scheme{{ schemes|length|pluralize }}</p></div>
+    <div class="card-header-left">
+      <h3>All Schemes</h3>
+      <p>{{ schemes|length }} scheme{{ schemes|length|pluralize }}</p>
+    </div>
   </div>
+
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>#</th><th>Title</th><th>Category</th><th>Region</th>
-          <th>Beneficiaries</th><th>Deadline</th><th>Status</th>
-          <th>Created By</th><th>Actions</th>
+          <th>#</th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Region</th>
+          <th>Beneficiaries</th>
+          <th>Deadline</th>
+          <th>Status</th>
+          <th>Created By</th>
+          <th>Actions</th>
         </tr>
       </thead>
+
       <tbody id="schemes-tbody">
         {% for s in schemes %}
-        <tr data-id="{{ s.pk }}" data-status="{{ s.status }}">
+        <tr
+          data-id="{{ s.pk }}"
+          data-status="{{ s.status }}"
+          data-title="{{ s.title|escapejs }}"
+          data-title-ur="{{ s.title_ur|default:''|escapejs }}"
+          data-description="{{ s.description|escapejs }}"
+          data-category="{{ s.category }}"
+          data-region="{{ s.target_region|escapejs }}"
+          data-beneficiaries="{{ s.beneficiaries|default:'0' }}"
+          data-deadline="{% if s.deadline %}{{ s.deadline|date:'Y-m-d' }}{% endif %}"
+        >
           <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+
           <td>
             <strong>{{ s.title }}</strong>
-            {% if s.title_ur %}<div style="font-size:11px;color:var(--text-muted);direction:rtl;text-align:left;">{{ s.title_ur }}</div>{% endif %}
+            {% if s.title_ur %}
+            <div style="font-size:11px;color:var(--text-muted);direction:rtl;text-align:left;">
+              {{ s.title_ur }}
+            </div>
+            {% endif %}
           </td>
-          <td><span class="badge badge-blue">{{ s.get_category_display }}</span></td>
-          <td style="font-size:13px;">{{ s.target_region }}</td>
-          <td style="font-size:13px;font-weight:600;">{{ s.beneficiaries|default:"0" }}</td>
-          <td style="font-size:12px;color:var(--text-muted);">
-            {% if s.deadline %}{{ s.deadline|date:"M d, Y" }}{% else %}Ongoing{% endif %}
-          </td>
+
           <td>
-            <select onchange="updateStatus({{ s.pk }}, this.value)" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
+            <span class="badge badge-blue">{{ s.get_category_display }}</span>
+          </td>
+
+          <td style="font-size:13px;">{{ s.target_region }}</td>
+
+          <td style="font-size:13px;font-weight:600;">
+            {{ s.beneficiaries|default:"0" }}
+          </td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {% if s.deadline %}
+              {{ s.deadline|date:"M d, Y" }}
+            {% else %}
+              Ongoing
+            {% endif %}
+          </td>
+
+          <td>
+            <select
+              onchange="updateStatus({{ s.pk }}, this.value)"
+              style="padding:5px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none;cursor:pointer;"
+            >
               {% for val, label in s.STATUS %}
-              <option value="{{ val }}" {% if s.status == val %}selected{% endif %}>{{ label }}</option>
+              <option value="{{ val }}" {% if s.status == val %}selected{% endif %}>
+                {{ label }}
+              </option>
               {% endfor %}
             </select>
           </td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ s.created_by.username|default:"Admin" }}</td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ s.created_by.username|default:"Admin" }}
+          </td>
+
           <td>
-            <button class="tbl-action edit" onclick="editScheme({{ s.pk }})"><i class="ph ph-pencil-simple"></i></button>
-            <button class="tbl-action del"  onclick="deleteScheme({{ s.pk }}, this)"><i class="ph ph-trash"></i></button>
+            <button class="tbl-action edit" onclick="editScheme({{ s.pk }})" title="Edit Scheme">
+              <i class="ph ph-pencil-simple"></i>
+            </button>
+            <button class="tbl-action del" onclick="deleteScheme({{ s.pk }}, this)" title="Delete Scheme">
+              <i class="ph ph-trash"></i>
+            </button>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);">No schemes yet. Click "Create Scheme" to add one.</td></tr>
+        <tr>
+          <td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No schemes yet. Click "Create Scheme" to add one.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- ── CREATE / EDIT MODAL ───────────────────────────────── -->
+<!-- CREATE / EDIT MODAL -->
 <div class="modal-overlay" id="scheme-modal">
   <div class="modal">
     <div class="modal-header">
       <h2 id="scheme-modal-title">Create Government Scheme</h2>
-      <button class="close-btn" onclick="closeModal('scheme-modal')"><i class="ph ph-x"></i></button>
+      <button class="close-btn" onclick="closeModal('scheme-modal')">
+        <i class="ph ph-x"></i>
+      </button>
     </div>
+
     <div class="modal-body">
       <input type="hidden" id="edit-scheme-id">
-      <div class="fg"><label>Scheme Title (English) *</label><input type="text" id="s-title" placeholder="e.g. Kissan Card Subsidy 2027"></div>
-      <div class="fg"><label>Title (Urdu)</label><input type="text" id="s-title-ur" placeholder="e.g. کسان کارڈ سبسڈی" dir="rtl"></div>
-      <div class="fg"><label>Description *</label><textarea id="s-desc" rows="3" placeholder="Explain the benefits, eligibility, and how to apply…"></textarea></div>
+
+      <div class="fg">
+        <label>Scheme Title (English) *</label>
+        <input type="text" id="s-title" placeholder="e.g. Kissan Card Subsidy 2027">
+      </div>
+
+      <div class="fg">
+        <label>Title (Urdu)</label>
+        <input type="text" id="s-title-ur" placeholder="e.g. کسان کارڈ سبسڈی" dir="rtl">
+      </div>
+
+      <div class="fg">
+        <label>Description *</label>
+        <textarea id="s-desc" rows="3" placeholder="Explain the benefits, eligibility, and how to apply…"></textarea>
+      </div>
+
       <div class="form-row">
         <div class="fg">
           <label>Category</label>
@@ -119,24 +198,41 @@
             <option value="training">Training & Education</option>
           </select>
         </div>
-        <div class="fg"><label>Target Region</label><input type="text" id="s-region" placeholder="e.g. All Punjab"></div>
+
+        <div class="fg">
+          <label>Target Region</label>
+          <input type="text" id="s-region" placeholder="e.g. All Punjab">
+        </div>
       </div>
+
       <div class="form-row">
-        <div class="fg"><label>Beneficiaries (count)</label><input type="number" id="s-beneficiaries" placeholder="e.g. 12400"></div>
-        <div class="fg"><label>Deadline</label><input type="date" id="s-deadline"></div>
+        <div class="fg">
+          <label>Beneficiaries (count)</label>
+          <input type="number" id="s-beneficiaries" placeholder="e.g. 12400">
+        </div>
+
+        <div class="fg">
+          <label>Deadline</label>
+          <input type="date" id="s-deadline">
+        </div>
       </div>
+
       <div class="fg">
         <label>Status</label>
         <select id="s-status">
           <option value="active">Active</option>
           <option value="review">Under Review</option>
           <option value="draft">Draft</option>
+          <option value="expired">Expired</option>
         </select>
       </div>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('scheme-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveScheme()"><i class="ph ph-paper-plane-tilt"></i> Publish Scheme</button>
+      <button class="btn btn-primary" id="scheme-save-btn" onclick="saveScheme()">
+        <i class="ph ph-paper-plane-tilt"></i> Publish Scheme
+      </button>
     </div>
   </div>
 </div>
@@ -147,69 +243,169 @@
 <script>
 let editingSchemeId = null;
 
+function setSchemeForm(data = {}) {
+  document.getElementById('edit-scheme-id').value = data.id || '';
+  document.getElementById('s-title').value = data.title || '';
+  document.getElementById('s-title-ur').value = data.title_ur || '';
+  document.getElementById('s-desc').value = data.description || '';
+  document.getElementById('s-category').value = data.category || 'subsidy';
+  document.getElementById('s-region').value = data.target_region || data.region || 'All Regions';
+  document.getElementById('s-beneficiaries').value = data.beneficiaries || 0;
+  document.getElementById('s-deadline').value = data.deadline || '';
+  document.getElementById('s-status').value = data.status || 'draft';
+}
+
+function resetSchemeForm() {
+  editingSchemeId = null;
+  setSchemeForm({
+    id: '',
+    title: '',
+    title_ur: '',
+    description: '',
+    category: 'subsidy',
+    target_region: 'All Regions',
+    beneficiaries: 0,
+    deadline: '',
+    status: 'draft'
+  });
+}
+
 function filterSchemes(status, btn) {
   document.querySelectorAll('.pf').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+
   document.querySelectorAll('#schemes-tbody tr[data-id]').forEach(row => {
     row.style.display = (!status || row.dataset.status === status) ? '' : 'none';
   });
 }
 
 function openNewSchemeModal() {
-  editingSchemeId = null;
+  resetSchemeForm();
+
   document.getElementById('scheme-modal-title').textContent = 'Create Government Scheme';
-  ['s-title','s-title-ur','s-desc','s-region','s-deadline'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('s-beneficiaries').value = '';
-  document.getElementById('s-status').value = 'draft';
+  document.getElementById('scheme-save-btn').innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Publish Scheme';
+
   openModal('scheme-modal');
 }
 
-function editScheme(id) {
+async function editScheme(id) {
   editingSchemeId = id;
-  document.getElementById('scheme-modal-title').textContent = 'Edit Scheme';
-  toast('Load existing data into the form for editing.', 'success');
+
+  document.getElementById('scheme-modal-title').textContent = 'Edit Government Scheme';
+  document.getElementById('scheme-save-btn').innerHTML = '<i class="ph ph-check-circle"></i> Update Scheme';
+
+  const row = document.querySelector(`#schemes-tbody tr[data-id="${id}"]`);
+
+  if (row) {
+    setSchemeForm({
+      id: id,
+      title: row.dataset.title || '',
+      title_ur: row.dataset.titleUr || '',
+      description: row.dataset.description || '',
+      category: row.dataset.category || 'subsidy',
+      target_region: row.dataset.region || 'All Regions',
+      beneficiaries: row.dataset.beneficiaries || 0,
+      deadline: row.dataset.deadline || '',
+      status: row.dataset.status || 'draft'
+    });
+  }
+
   openModal('scheme-modal');
+
+  try {
+    const response = await fetch(`/api/schemes/${id}/`);
+    const result = await response.json();
+
+    if (result.success && result.scheme) {
+      setSchemeForm(result.scheme);
+    }
+  } catch (error) {
+    console.warn('Could not fetch scheme detail. Using table data instead.', error);
+  }
 }
 
 async function saveScheme() {
   const title = document.getElementById('s-title').value.trim();
-  const desc  = document.getElementById('s-desc').value.trim();
-  if (!title || !desc) { toast('Title and Description are required.', 'error'); return; }
+  const desc = document.getElementById('s-desc').value.trim();
+
+  if (!title || !desc) {
+    toast('Title and Description are required.', 'error');
+    return;
+  }
 
   const payload = {
-    title,
-    title_ur:      document.getElementById('s-title-ur').value,
-    description:   desc,
-    category:      document.getElementById('s-category').value,
-    target_region: document.getElementById('s-region').value || 'All Regions',
+    title: title,
+    title_ur: document.getElementById('s-title-ur').value.trim(),
+    description: desc,
+    category: document.getElementById('s-category').value,
+    target_region: document.getElementById('s-region').value.trim() || 'All Regions',
     beneficiaries: parseInt(document.getElementById('s-beneficiaries').value || 0),
-    deadline:      document.getElementById('s-deadline').value || null,
-    status:        document.getElementById('s-status').value,
+    deadline: document.getElementById('s-deadline').value || null,
+    status: document.getElementById('s-status').value,
   };
 
-  const res = await api('/govt-schemes/create/', 'POST', payload);
-  if (res.success) {
-    toast(res.message, 'success');
-    closeModal('scheme-modal');
-    setTimeout(() => location.reload(), 800);
-  } else { toast(res.error || 'Error saving scheme.', 'error'); }
+  const url = editingSchemeId
+    ? `/govt-schemes/${editingSchemeId}/update/`
+    : '/govt-schemes/create/';
+
+  try {
+    const res = await api(url, 'POST', payload);
+
+    if (res.success) {
+      toast(res.message || 'Scheme saved successfully.', 'success');
+      closeModal('scheme-modal');
+      setTimeout(() => location.reload(), 700);
+    } else {
+      toast(res.message || res.error || 'Error saving scheme.', 'error');
+    }
+  } catch (error) {
+    toast('Request failed. Please try again.', 'error');
+    console.error(error);
+  }
 }
 
 async function updateStatus(id, newStatus) {
-  const res = await api(`/govt-schemes/${id}/status/`, 'POST', { status: newStatus });
-  if (res.success) { toast('Status updated.', 'success'); }
-  else { toast('Failed to update status.', 'error'); }
+  try {
+    const res = await api(`/govt-schemes/${id}/status/`, 'POST', {
+      status: newStatus
+    });
+
+    if (res.success) {
+      const row = document.querySelector(`#schemes-tbody tr[data-id="${id}"]`);
+      if (row) {
+        row.dataset.status = newStatus;
+      }
+      toast('Status updated.', 'success');
+    } else {
+      toast(res.message || 'Failed to update status.', 'error');
+    }
+  } catch (error) {
+    toast('Failed to update status.', 'error');
+    console.error(error);
+  }
 }
 
 async function deleteScheme(id, btn) {
   if (!confirm('Delete this scheme permanently?')) return;
-  const res = await api(`/govt-schemes/${id}/delete/`, 'POST');
-  if (res.success) {
-    const row = btn.closest('tr');
-    row.style.opacity = '0'; row.style.transition = 'opacity 0.3s';
-    setTimeout(() => row.remove(), 300);
-    toast(res.message, 'success');
-  } else { toast(res.error, 'error'); }
+
+  try {
+    const res = await api(`/govt-schemes/${id}/delete/`, 'POST');
+
+    if (res.success) {
+      const row = btn.closest('tr');
+      row.style.opacity = '0';
+      row.style.transition = 'opacity 0.3s';
+
+      setTimeout(() => row.remove(), 300);
+
+      toast(res.message || 'Scheme deleted successfully.', 'success');
+    } else {
+      toast(res.message || res.error || 'Delete failed.', 'error');
+    }
+  } catch (error) {
+    toast('Delete request failed.', 'error');
+    console.error(error);
+  }
 }
 </script>
 {% endblock %}

@@ -2,35 +2,107 @@
 {% block title %}Content Management{% endblock %}
 {% block page_title %}Content Management{% endblock %}
 {% block page_subtitle %}Manage articles, announcements, and farming tips{% endblock %}
+
 {% block content %}
+
 <div class="section-header">
-  <div><h1>Content Management</h1><p>{{ items|length }} content items</p></div>
-  <button class="btn btn-primary"><i class="ph ph-plus"></i> New Content</button>
+  <div>
+    <h1>Content Management</h1>
+    <p>{{ items|length }} content item{{ items|length|pluralize }}</p>
+  </div>
+
+  <a href="/admin/core/contentitem/add/" class="btn btn-primary">
+    <i class="ph ph-plus"></i> New Content
+  </a>
 </div>
+
 <div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <h3>Articles, Announcements & Tips</h3>
+      <p>Manage educational content and farmer-facing announcements.</p>
+    </div>
+  </div>
+
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Title</th><th>Type</th><th>Region</th><th>Published</th><th>Created By</th><th>Date</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Title</th>
+          <th>Preview</th>
+          <th>Type</th>
+          <th>Region</th>
+          <th>Published</th>
+          <th>Created By</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
       <tbody>
         {% for item in items %}
         <tr>
-          <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
-          <td><strong>{{ item.title }}</strong></td>
-          <td><span class="badge badge-blue">{{ item.get_item_type_display }}</span></td>
-          <td>{{ item.region }}</td>
-          <td>{% if item.is_published %}<span class="badge badge-green">Published</span>{% else %}<span class="badge badge-gray">Draft</span>{% endif %}</td>
-          <td style="color:var(--text-muted);">{{ item.created_by.username|default:"Admin" }}</td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ item.created_at|date:"M d, Y" }}</td>
+          <td style="color:var(--text-muted);font-size:12px;">
+            {{ forloop.counter }}
+          </td>
+
           <td>
-            <button class="tbl-action edit"><i class="ph ph-pencil-simple"></i></button>
-            <button class="tbl-action del"><i class="ph ph-trash"></i></button>
+            <strong>{{ item.title }}</strong>
+          </td>
+
+          <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:12px;">
+            {{ item.content|truncatechars:100 }}
+          </td>
+
+          <td>
+            <span class="badge badge-blue">{{ item.get_item_type_display }}</span>
+          </td>
+
+          <td>
+            {{ item.region|default:"All Regions" }}
+          </td>
+
+          <td>
+            {% if item.is_published %}
+              <span class="badge badge-green">Published</span>
+            {% else %}
+              <span class="badge badge-gray">Draft</span>
+            {% endif %}
+          </td>
+
+          <td style="color:var(--text-muted);">
+            {% if item.created_by %}
+              {{ item.created_by.username }}
+            {% else %}
+              Admin
+            {% endif %}
+          </td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ item.created_at|date:"M d, Y" }}
+          </td>
+
+          <td>
+            <a href="/admin/core/contentitem/{{ item.pk }}/change/" class="tbl-action edit" title="Edit in admin">
+              <i class="ph ph-pencil-simple"></i>
+            </a>
+
+            <a href="/admin/core/contentitem/{{ item.pk }}/delete/" class="tbl-action del" title="Delete in admin">
+              <i class="ph ph-trash"></i>
+            </a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">No content yet.</td></tr>
+        <tr>
+          <td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No content yet. Add farming tips, articles, or announcements from Django Admin.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
 {% endblock %}

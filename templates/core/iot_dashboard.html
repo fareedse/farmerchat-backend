@@ -10,14 +10,17 @@
     <h1>IoT Sensor Dashboard</h1>
     <p>Live readings from field sensor nodes across all registered farms.</p>
   </div>
+
   <div style="display:flex;gap:12px;align-items:center;">
     <span class="live-pill"><span class="live-dot"></span>Live Feed</span>
-    <select id="node-select" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;color:var(--text-h);">
+
+    <select id="node-select" onchange="loadLiveData(); loadHistoryData();"
+      style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;color:var(--text-h);">
+      <option value="">All Devices</option>
       {% for d in devices %}
       <option value="{{ d.device_id }}">{{ d.device_id }} — {{ d.farm_name }}</option>
       {% empty %}
-      <option value="NODE-001">NODE-001 — Farm A, Faisalabad</option>
-      <option value="NODE-002">NODE-002 — Farm B, Lahore</option>
+      <option value="">No registered devices</option>
       {% endfor %}
     </select>
   </div>
@@ -26,20 +29,36 @@
 <!-- Device Stats Row -->
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon green"><i class="ph ph-wifi-high"></i></div><span class="stat-trend up">Online</span></div>
-    <div class="stat-val">{{ online|default:"2" }}</div><div class="stat-label">Devices Online</div>
+    <div class="stat-card-top">
+      <div class="stat-icon green"><i class="ph ph-wifi-high"></i></div>
+      <span class="stat-trend up">Online</span>
+    </div>
+    <div class="stat-val">{{ online|default:"0" }}</div>
+    <div class="stat-label">Devices Online</div>
   </div>
+
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon red"><i class="ph ph-wifi-slash"></i></div></div>
-    <div class="stat-val">{{ offline|default:"2" }}</div><div class="stat-label">Offline / Warning</div>
+    <div class="stat-card-top">
+      <div class="stat-icon red"><i class="ph ph-wifi-slash"></i></div>
+    </div>
+    <div class="stat-val">{{ offline|default:"0" }}</div>
+    <div class="stat-label">Offline / Warning</div>
   </div>
+
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon blue"><i class="ph ph-cpu"></i></div></div>
-    <div class="stat-val">{{ devices|length|default:"4" }}</div><div class="stat-label">Total Devices</div>
+    <div class="stat-card-top">
+      <div class="stat-icon blue"><i class="ph ph-cpu"></i></div>
+    </div>
+    <div class="stat-val">{{ devices|length|default:"0" }}</div>
+    <div class="stat-label">Total Devices</div>
   </div>
+
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon amber"><i class="ph ph-warning"></i></div></div>
-    <div class="stat-val">1</div><div class="stat-label">Active Alerts</div>
+    <div class="stat-card-top">
+      <div class="stat-icon amber"><i class="ph ph-warning"></i></div>
+    </div>
+    <div class="stat-val" id="active-alerts-count">0</div>
+    <div class="stat-label">Sensor Alerts</div>
   </div>
 </div>
 
@@ -51,20 +70,31 @@
     <div class="card-body-pad">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
         <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;" id="m-node-id">NODE-001 · Soil Probe</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;" id="m-node-id">
+            Latest Node · Soil Probe
+          </div>
           <div style="font-size:13px;font-weight:700;color:var(--text-h);">Soil Moisture</div>
         </div>
-        <div style="width:42px;height:42px;background:#DBEAFE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2563EB;"><i class="ph ph-drop-half"></i></div>
+        <div style="width:42px;height:42px;background:#DBEAFE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2563EB;">
+          <i class="ph ph-drop-half"></i>
+        </div>
       </div>
+
       <div style="font-size:52px;font-weight:800;color:#1D4ED8;letter-spacing:-3px;line-height:1;margin-bottom:6px;" id="moisture-val">
-        68<span style="font-size:20px;font-weight:500;color:var(--text-muted);">%</span>
+        0<span style="font-size:20px;font-weight:500;color:var(--text-muted);">%</span>
       </div>
+
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Volumetric Water Content</div>
+
       <div style="height:6px;background:#DBEAFE;border-radius:3px;margin-bottom:6px;overflow:hidden;">
-        <div id="m-bar" style="width:68%;height:100%;background:linear-gradient(90deg,#3B82F6,#60A5FA);border-radius:3px;transition:width 0.8s ease;"></div>
+        <div id="m-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#3B82F6,#60A5FA);border-radius:3px;transition:width 0.8s ease;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:12px;"><span>0% Dry</span><span>100% Saturated</span></div>
-      <div id="m-status" class="badge badge-green" style="width:100%;justify-content:center;">✓ Optimal Range (40–80%)</div>
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+        <span>0% Dry</span><span>100% Saturated</span>
+      </div>
+
+      <div id="m-status" class="badge badge-gray" style="width:100%;justify-content:center;">Waiting for data</div>
     </div>
   </div>
 
@@ -73,20 +103,31 @@
     <div class="card-body-pad">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
         <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">NODE-001 · DHT22</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;" id="t-node-id">
+            Latest Node · DHT22
+          </div>
           <div style="font-size:13px;font-weight:700;color:var(--text-h);">Air Temperature</div>
         </div>
-        <div style="width:42px;height:42px;background:#FEF3C7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#D97706;"><i class="ph ph-thermometer"></i></div>
+        <div style="width:42px;height:42px;background:#FEF3C7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#D97706;">
+          <i class="ph ph-thermometer"></i>
+        </div>
       </div>
+
       <div style="font-size:52px;font-weight:800;color:#D97706;letter-spacing:-3px;line-height:1;margin-bottom:6px;" id="temp-val">
-        34<span style="font-size:20px;font-weight:500;color:var(--text-muted);">°C</span>
+        0<span style="font-size:20px;font-weight:500;color:var(--text-muted);">°C</span>
       </div>
+
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Real-time ambient temperature</div>
+
       <div style="height:6px;background:#FEF3C7;border-radius:3px;margin-bottom:6px;overflow:hidden;">
-        <div id="t-bar" style="width:68%;height:100%;background:linear-gradient(90deg,#F59E0B,#FBBF24);border-radius:3px;transition:width 0.8s ease;"></div>
+        <div id="t-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#F59E0B,#FBBF24);border-radius:3px;transition:width 0.8s ease;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:12px;"><span>0°C</span><span>50°C</span></div>
-      <div id="t-status" class="badge badge-amber" style="width:100%;justify-content:center;">⚠ Slightly High (ideal: 20–32°C)</div>
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+        <span>0°C</span><span>50°C</span>
+      </div>
+
+      <div id="t-status" class="badge badge-gray" style="width:100%;justify-content:center;">Waiting for data</div>
     </div>
   </div>
 
@@ -95,62 +136,138 @@
     <div class="card-body-pad">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
         <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">NODE-001 · DHT22</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;" id="h-node-id">
+            Latest Node · DHT22
+          </div>
           <div style="font-size:13px;font-weight:700;color:var(--text-h);">Relative Humidity</div>
         </div>
-        <div style="width:42px;height:42px;background:#EDE9FE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7C3AED;"><i class="ph ph-wind"></i></div>
+        <div style="width:42px;height:42px;background:#EDE9FE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7C3AED;">
+          <i class="ph ph-wind"></i>
+        </div>
       </div>
+
       <div style="font-size:52px;font-weight:800;color:#7C3AED;letter-spacing:-3px;line-height:1;margin-bottom:6px;" id="humidity-val">
-        72<span style="font-size:20px;font-weight:500;color:var(--text-muted);">%</span>
+        0<span style="font-size:20px;font-weight:500;color:var(--text-muted);">%</span>
       </div>
+
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Air humidity percentage</div>
+
       <div style="height:6px;background:#EDE9FE;border-radius:3px;margin-bottom:6px;overflow:hidden;">
-        <div id="h-bar" style="width:72%;height:100%;background:linear-gradient(90deg,#8B5CF6,#A78BFA);border-radius:3px;transition:width 0.8s ease;"></div>
+        <div id="h-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#8B5CF6,#A78BFA);border-radius:3px;transition:width 0.8s ease;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:12px;"><span>0% Arid</span><span>100% Saturated</span></div>
-      <div id="h-status" class="badge badge-green" style="width:100%;justify-content:center;">✓ Optimal Range (60–80%)</div>
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+        <span>0% Arid</span><span>100% Saturated</span>
+      </div>
+
+      <div id="h-status" class="badge badge-gray" style="width:100%;justify-content:center;">Waiting for data</div>
     </div>
   </div>
 </div>
 
 <!-- History Charts -->
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px;">
-  <div class="card"><div class="card-header"><div class="card-header-left"><h3>💧 Moisture — 24h</h3><p>Hourly readings</p></div></div><div class="card-body-pad" style="padding-top:0;"><canvas id="mc" style="max-height:130px;"></canvas></div></div>
-  <div class="card"><div class="card-header"><div class="card-header-left"><h3>🌡️ Temperature — 24h</h3><p>Hourly readings</p></div></div><div class="card-body-pad" style="padding-top:0;"><canvas id="tc" style="max-height:130px;"></canvas></div></div>
-  <div class="card"><div class="card-header"><div class="card-header-left"><h3>🌫️ Humidity — 24h</h3><p>Hourly readings</p></div></div><div class="card-body-pad" style="padding-top:0;"><canvas id="hc" style="max-height:130px;"></canvas></div></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-left"><h3>💧 Moisture — 24h</h3><p>Latest readings</p></div>
+    </div>
+    <div class="card-body-pad" style="padding-top:0;">
+      <canvas id="mc" style="max-height:130px;"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-left"><h3>🌡️ Temperature — 24h</h3><p>Latest readings</p></div>
+    </div>
+    <div class="card-body-pad" style="padding-top:0;">
+      <canvas id="tc" style="max-height:130px;"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-left"><h3>🌫️ Humidity — 24h</h3><p>Latest readings</p></div>
+    </div>
+    <div class="card-body-pad" style="padding-top:0;">
+      <canvas id="hc" style="max-height:130px;"></canvas>
+    </div>
+  </div>
 </div>
 
 <!-- Device Table -->
 <div class="card">
   <div class="card-header">
-    <div class="card-header-left"><h3>All Sensor Devices</h3><p>Registered IoT field nodes</p></div>
-    <button class="btn btn-primary" style="font-size:12px;padding:8px 14px;"><i class="ph ph-plus"></i> Register Device</button>
+    <div class="card-header-left">
+      <h3>All Sensor Devices</h3>
+      <p>Registered IoT field nodes</p>
+    </div>
   </div>
+
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Device ID</th><th>Farm / Location</th><th>Type</th><th>Moisture</th><th>Temperature</th><th>Humidity</th><th>Last Ping</th><th>Status</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Device ID</th>
+          <th>Farm / Location</th>
+          <th>Type</th>
+          <th>Moisture</th>
+          <th>Temperature</th>
+          <th>Humidity</th>
+          <th>Last Ping</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
       <tbody>
         {% for d in devices %}
         <tr>
           <td><strong>{{ d.device_id }}</strong></td>
           <td style="font-size:13px;">{{ d.farm_name }}, {{ d.location }}</td>
           <td><span class="badge badge-blue">{{ d.get_device_type_display }}</span></td>
+
           {% with r=d.readings.first %}
-          <td>{% if r and r.moisture %}<span class="price-chip" style="background:#DBEAFE;color:#1D4ED8;">{{ r.moisture|floatformat:0 }}%</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
-          <td>{% if r and r.temperature %}<span class="price-chip" style="background:#FEF3C7;color:#92400E;">{{ r.temperature|floatformat:1 }}°C</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
-          <td>{% if r and r.humidity %}<span class="price-chip" style="background:#EDE9FE;color:#6D28D9;">{{ r.humidity|floatformat:0 }}%</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
+          <td>
+            {% if r and r.moisture %}
+            <span class="price-chip" style="background:#DBEAFE;color:#1D4ED8;">{{ r.moisture|floatformat:0 }}%</span>
+            {% else %}
+            <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if r and r.temperature %}
+            <span class="price-chip" style="background:#FEF3C7;color:#92400E;">{{ r.temperature|floatformat:1 }}°C</span>
+            {% else %}
+            <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if r and r.humidity %}
+            <span class="price-chip" style="background:#EDE9FE;color:#6D28D9;">{{ r.humidity|floatformat:0 }}%</span>
+            {% else %}
+            <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
           {% endwith %}
-          <td style="font-size:12px;color:{% if d.is_online %}var(--green-dark){% else %}var(--red){% endif %};">
+
+          <td style="font-size:12px;" class="{% if d.is_online %}text-green-dark{% else %}text-red{% endif %}">
             {% if d.last_ping %}{{ d.last_ping|timesince }} ago{% else %}Never{% endif %}
           </td>
-          <td><span class="badge {% if d.is_online %}badge-green{% else %}badge-red{% endif %}">{% if d.is_online %}Online{% else %}Offline{% endif %}</span></td>
+
+          <td>
+            <span class="badge {% if d.is_online %}badge-green{% else %}badge-red{% endif %}">
+              {% if d.is_online %}Online{% else %}Offline{% endif %}
+            </span>
+          </td>
         </tr>
         {% empty %}
-        <!-- Demo rows when no real devices -->
-        <tr><td><strong>NODE-001</strong></td><td>Farm A, Faisalabad</td><td><span class="badge badge-blue">Full Kit</span></td><td><span class="price-chip" style="background:#DBEAFE;color:#1D4ED8;" id="tbl-m">68%</span></td><td><span class="price-chip" style="background:#FEF3C7;color:#92400E;" id="tbl-t">34°C</span></td><td><span class="price-chip" style="background:#EDE9FE;color:#6D28D9;" id="tbl-h">72%</span></td><td style="font-size:12px;color:var(--green-dark);">2 sec ago</td><td><span class="badge badge-green">Online</span></td></tr>
-        <tr><td><strong>NODE-002</strong></td><td>Farm B, Lahore</td><td><span class="badge badge-blue">Full Kit</span></td><td><span class="price-chip" style="background:#DBEAFE;color:#1D4ED8;">55%</span></td><td><span class="price-chip" style="background:#FEF3C7;color:#92400E;">31°C</span></td><td><span class="price-chip" style="background:#EDE9FE;color:#6D28D9;">65%</span></td><td style="font-size:12px;color:var(--green-dark);">14 sec ago</td><td><span class="badge badge-green">Online</span></td></tr>
-        <tr><td><strong>NODE-003</strong></td><td>Farm C, Multan</td><td><span class="badge badge-blue">Soil Only</span></td><td><span class="price-chip" style="background:#FEE2E2;color:#B91C1C;">23%</span></td><td style="color:var(--text-muted);">—</td><td style="color:var(--text-muted);">—</td><td style="font-size:12px;color:var(--red);">8 min ago</td><td><span class="badge badge-amber">Warning</span></td></tr>
-        <tr><td><strong>NODE-004</strong></td><td>Farm D, Gujranwala</td><td><span class="badge badge-blue">Full Kit</span></td><td style="color:var(--text-muted);">—</td><td style="color:var(--text-muted);">—</td><td style="color:var(--text-muted);">—</td><td style="font-size:12px;color:var(--red);">2 hrs ago</td><td><span class="badge badge-red">Offline</span></td></tr>
+        <tr>
+          <td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No IoT devices registered yet. Send sensor data to create a device automatically.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
@@ -161,85 +278,200 @@
 
 {% block extra_js %}
 <script>
-// Generate 24h demo history
-function genHist(base, noise, min, max) {
-  return Array.from({length:24}, () => {
-    const v = base + (Math.random()-.5)*noise;
-    return Math.min(max, Math.max(min, Math.round(v*10)/10));
-  });
+let moistureChart = null;
+let tempChart = null;
+let humidityChart = null;
+
+function safeNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }
-const hours = Array.from({length:24}, (_,i) => `${i}:00`);
-const mH = genHist(66,14,20,95), tH = genHist(33,7,18,45), hH = genHist(70,12,35,95);
 
-const chartOpts = (color) => ({
-  type:'line',
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
-    scales:{
-      x:{grid:{display:false},ticks:{font:{size:9},maxTicksLimit:6,color:'#8A9E94'}},
-      y:{grid:{color:'#F0F4F2'},ticks:{font:{size:9},color:'#8A9E94'}}
-    },
-    elements:{point:{radius:0},line:{tension:0.4}}
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function setBadge(el, className, text) {
+  el.className = `badge ${className}`;
+  el.style.width = '100%';
+  el.style.justifyContent = 'center';
+  el.textContent = text;
+}
+
+function updateStatusBadges(m, t, h) {
+  let alertCount = 0;
+
+  const mStatus = document.getElementById('m-status');
+  if (m <= 0) {
+    setBadge(mStatus, 'badge-gray', 'No moisture data');
+  } else if (m < 30) {
+    setBadge(mStatus, 'badge-red', '🚨 Critical — Too Dry');
+    alertCount++;
+  } else if (m > 85) {
+    setBadge(mStatus, 'badge-amber', '⚠ High — Waterlogging Risk');
+    alertCount++;
+  } else {
+    setBadge(mStatus, 'badge-green', '✓ Optimal Range');
   }
-});
 
-const mc = new Chart(document.getElementById('mc'),{...chartOpts('#3B82F6'), data:{labels:hours,datasets:[{data:mH,borderColor:'#3B82F6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,borderWidth:2}]}});
-const tc = new Chart(document.getElementById('tc'),{...chartOpts('#F59E0B'), data:{labels:hours,datasets:[{data:tH,borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,0.08)',fill:true,borderWidth:2}]}});
-const hc = new Chart(document.getElementById('hc'),{...chartOpts('#8B5CF6'), data:{labels:hours,datasets:[{data:hH,borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,0.08)',fill:true,borderWidth:2}]}});
+  const tStatus = document.getElementById('t-status');
+  if (t <= 0) {
+    setBadge(tStatus, 'badge-gray', 'No temperature data');
+  } else if (t > 40) {
+    setBadge(tStatus, 'badge-red', '🚨 Critical — Heat Stress');
+    alertCount++;
+  } else if (t > 33) {
+    setBadge(tStatus, 'badge-amber', '⚠ High — Monitor Closely');
+    alertCount++;
+  } else {
+    setBadge(tStatus, 'badge-green', '✓ Normal Range');
+  }
 
-// Live simulation (replace with fetch('/api/iot/live/?node='+nodeId) in production)
-function simUpdate() {
-  const m = Math.min(95,Math.max(20, parseInt(document.getElementById('moisture-val').textContent)+((Math.random()>.5)?1:-1)));
-  const t = Math.min(45,Math.max(15, parseInt(document.getElementById('temp-val').textContent)+((Math.random()>.6)?1:-1)));
-  const h = Math.min(95,Math.max(30, parseInt(document.getElementById('humidity-val').textContent)+((Math.random()>.5)?1:-1)));
+  const hStatus = document.getElementById('h-status');
+  if (h <= 0) {
+    setBadge(hStatus, 'badge-gray', 'No humidity data');
+  } else if (h < 40) {
+    setBadge(hStatus, 'badge-amber', '⚠ Low — Crop Stress Risk');
+    alertCount++;
+  } else if (h > 88) {
+    setBadge(hStatus, 'badge-red', '🚨 High — Fungal Risk');
+    alertCount++;
+  } else {
+    setBadge(hStatus, 'badge-green', '✓ Optimal Range');
+  }
+
+  document.getElementById('active-alerts-count').textContent = alertCount;
+}
+
+function updateCards(data) {
+  const m = safeNumber(data.moisture);
+  const t = safeNumber(data.temperature);
+  const h = safeNumber(data.humidity);
+  const selectedNode = document.getElementById('node-select').value || 'Latest Node';
+
+  document.getElementById('m-node-id').textContent = `${selectedNode} · Soil Probe`;
+  document.getElementById('t-node-id').textContent = `${selectedNode} · DHT22`;
+  document.getElementById('h-node-id').textContent = `${selectedNode} · DHT22`;
 
   document.getElementById('moisture-val').innerHTML = `${m}<span style="font-size:20px;font-weight:500;color:var(--text-muted);">%</span>`;
-  document.getElementById('temp-val').innerHTML     = `${t}<span style="font-size:20px;font-weight:500;color:var(--text-muted);">°C</span>`;
+  document.getElementById('temp-val').innerHTML = `${t}<span style="font-size:20px;font-weight:500;color:var(--text-muted);">°C</span>`;
   document.getElementById('humidity-val').innerHTML = `${h}<span style="font-size:20px;font-weight:500;color:var(--text-muted);">%</span>`;
-  document.getElementById('m-bar').style.width = `${m}%`;
-  document.getElementById('t-bar').style.width = `${(t/50)*100}%`;
-  document.getElementById('h-bar').style.width = `${h}%`;
 
-  // Status badges
-  const mS = document.getElementById('m-status');
-  if (m<30){mS.className='badge badge-red';mS.textContent='🚨 Critical — Too Dry';}
-  else if(m>85){mS.className='badge badge-amber';mS.textContent='⚠ High — Waterlogging Risk';}
-  else{mS.className='badge badge-green';mS.textContent='✓ Optimal Range';}
+  document.getElementById('m-bar').style.width = `${clamp(m, 0, 100)}%`;
+  document.getElementById('t-bar').style.width = `${clamp((t / 50) * 100, 0, 100)}%`;
+  document.getElementById('h-bar').style.width = `${clamp(h, 0, 100)}%`;
 
-  const tS = document.getElementById('t-status');
-  if(t>40){tS.className='badge badge-red';tS.textContent='🚨 Critical — Heat Stress';}
-  else if(t>33){tS.className='badge badge-amber';tS.textContent='⚠ High — Monitor Closely';}
-  else{tS.className='badge badge-green';tS.textContent='✓ Normal Range';}
+  updateStatusBadges(m, t, h);
+}
 
-  const hS = document.getElementById('h-status');
-  if(h<40){hS.className='badge badge-amber';hS.textContent='⚠ Low — Crop Stress Risk';}
-  else if(h>88){hS.className='badge badge-red';hS.textContent='🚨 High — Fungal Risk';}
-  else{hS.className='badge badge-green';hS.textContent='✓ Optimal Range';}
-
-  // Update charts
-  [mc,tc,hc].forEach((ch,i)=>{
-    const v=[m,t,h][i];
-    ch.data.datasets[0].data.push(v); ch.data.datasets[0].data.shift(); ch.update('none');
+function createChart(canvasId, label, color, backgroundColor) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: label,
+        data: [],
+        borderColor: color,
+        backgroundColor: backgroundColor,
+        fill: true,
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 9 },
+            maxTicksLimit: 6,
+            color: '#8A9E94'
+          }
+        },
+        y: {
+          grid: { color: '#F0F4F2' },
+          ticks: {
+            font: { size: 9 },
+            color: '#8A9E94'
+          },
+          beginAtZero: true
+        }
+      }
+    }
   });
+}
 
-  // Update table demo cells
-  if(document.getElementById('tbl-m')) {
-    document.getElementById('tbl-m').textContent = m+'%';
-    document.getElementById('tbl-t').textContent = t+'°C';
-    document.getElementById('tbl-h').textContent = h+'%';
+function initCharts() {
+  moistureChart = createChart('mc', 'Moisture', '#3B82F6', 'rgba(59,130,246,0.08)');
+  tempChart = createChart('tc', 'Temperature', '#F59E0B', 'rgba(245,158,11,0.08)');
+  humidityChart = createChart('hc', 'Humidity', '#8B5CF6', 'rgba(139,92,246,0.08)');
+}
+
+function updateCharts(readings) {
+  const labels = readings.map(r => r.time || '');
+  const moisture = readings.map(r => safeNumber(r.moisture));
+  const temperature = readings.map(r => safeNumber(r.temperature));
+  const humidity = readings.map(r => safeNumber(r.humidity));
+
+  moistureChart.data.labels = labels;
+  moistureChart.data.datasets[0].data = moisture;
+  moistureChart.update();
+
+  tempChart.data.labels = labels;
+  tempChart.data.datasets[0].data = temperature;
+  tempChart.update();
+
+  humidityChart.data.labels = labels;
+  humidityChart.data.datasets[0].data = humidity;
+  humidityChart.update();
+}
+
+async function loadLiveData() {
+  try {
+    const node = document.getElementById('node-select').value;
+    const url = node ? `/api/iot/live/?node=${encodeURIComponent(node)}` : '/api/iot/live/';
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.success) {
+      return;
+    }
+
+    updateCards(data);
+  } catch (error) {
+    console.log('Waiting for live IoT data...');
   }
 }
-setInterval(simUpdate, 4000);
 
-// Real API polling — uncomment and replace simulation when backend is ready:
-// document.getElementById('node-select').addEventListener('change', loadLive);
-// async function loadLive() {
-//   const node = document.getElementById('node-select').value;
-//   const data = await api(`/api/iot/live/?node=${node}`);
-//   if (data.moisture) updateUI(data.moisture, data.temperature, data.humidity);
-// }
-// setInterval(loadLive, 5000);
-// loadLive();
+async function loadHistoryData() {
+  try {
+    const node = document.getElementById('node-select').value;
+    const url = node ? `/api/iot/history/?node=${encodeURIComponent(node)}` : '/api/iot/history/';
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.success || !data.readings) {
+      return;
+    }
+
+    updateCharts(data.readings);
+  } catch (error) {
+    console.log('Waiting for IoT history data...');
+  }
+}
+
+initCharts();
+loadLiveData();
+loadHistoryData();
+
+setInterval(loadLiveData, 3000);
+setInterval(loadHistoryData, 10000);
 </script>
 {% endblock %}

@@ -8,9 +8,9 @@
 <div class="section-header">
   <div>
     <h1>Market Rates</h1>
-    <p>Add, edit, and publish daily crop prices (PKR / 40kg) across the Mandi network.</p>
+    <p>Add, edit, and publish daily crop prices across the Mandi network.</p>
   </div>
-  <button class="btn btn-primary" onclick="openModal('market-modal')">
+  <button class="btn btn-primary" onclick="openNewRateModal()">
     <i class="ph ph-plus"></i> Add New Rate
   </button>
 </div>
@@ -18,32 +18,61 @@
 <!-- Summary Stats -->
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon green"><i class="ph ph-check-circle"></i></div><span class="stat-trend up">+3</span></div>
-    <div class="stat-val">{{ published }}</div><div class="stat-label">Published Rates</div>
+    <div class="stat-card-top">
+      <div class="stat-icon green"><i class="ph ph-check-circle"></i></div>
+      <span class="stat-trend up">Live</span>
+    </div>
+    <div class="stat-val">{{ counts.published }}</div>
+    <div class="stat-label">Published Rates</div>
   </div>
+
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon amber"><i class="ph ph-clock"></i></div></div>
-    <div class="stat-val">{{ pending }}</div><div class="stat-label">Pending</div>
+    <div class="stat-card-top">
+      <div class="stat-icon amber"><i class="ph ph-clock"></i></div>
+    </div>
+    <div class="stat-val">{{ counts.pending }}</div>
+    <div class="stat-label">Pending</div>
   </div>
+
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon blue"><i class="ph ph-file-dashed"></i></div></div>
-    <div class="stat-val">{{ draft }}</div><div class="stat-label">Drafts</div>
+    <div class="stat-card-top">
+      <div class="stat-icon blue"><i class="ph ph-file-dashed"></i></div>
+    </div>
+    <div class="stat-val">{{ counts.draft }}</div>
+    <div class="stat-label">Drafts</div>
   </div>
+
   <div class="stat-card">
-    <div class="stat-card-top"><div class="stat-icon violet"><i class="ph ph-map-pin"></i></div></div>
-    <div class="stat-val">{{ total }}</div><div class="stat-label">Total Entries</div>
+    <div class="stat-card-top">
+      <div class="stat-icon violet"><i class="ph ph-map-pin"></i></div>
+    </div>
+    <div class="stat-val">{{ counts.all }}</div>
+    <div class="stat-label">Total Entries</div>
   </div>
 </div>
 
 <!-- Filter & Table -->
 <div class="card">
   <div class="card-header">
-    <div class="card-header-left"><h3>All Market Rates</h3><p>{{ total }} entries in database</p></div>
+    <div class="card-header-left">
+      <h3>All Market Rates</h3>
+      <p>{{ rates|length }} entries showing</p>
+    </div>
+
     <div style="display:flex;gap:10px;align-items:center;">
-      <input type="text" id="filter-input" placeholder="Filter by crop or region…" oninput="filterTable(this.value)"
-        style="padding:8px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;color:var(--text-h);">
-      <select id="status-filter" onchange="filterTable(document.getElementById('filter-input').value)"
-        style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;">
+      <input
+        type="text"
+        id="filter-input"
+        placeholder="Filter by crop, mandi, or region…"
+        oninput="filterTable(this.value)"
+        style="padding:8px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;color:var(--text-h);"
+      >
+
+      <select
+        id="status-filter"
+        onchange="filterTable(document.getElementById('filter-input').value)"
+        style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;"
+      >
         <option value="">All Status</option>
         <option value="published">Published</option>
         <option value="pending">Pending</option>
@@ -51,6 +80,7 @@
       </select>
     </div>
   </div>
+
   <div class="table-wrap">
     <table id="market-table">
       <thead>
@@ -60,7 +90,7 @@
           <th>Urdu Name</th>
           <th>Mandi / Market</th>
           <th>Region</th>
-          <th>Price (PKR)</th>
+          <th>Price</th>
           <th>Unit</th>
           <th>Change %</th>
           <th>Status</th>
@@ -68,60 +98,128 @@
           <th>Actions</th>
         </tr>
       </thead>
+
       <tbody id="market-tbody">
         {% for rate in rates %}
-        <tr data-id="{{ rate.pk }}" data-status="{{ rate.status }}">
+        <tr
+          data-id="{{ rate.pk }}"
+          data-status="{{ rate.status }}"
+          data-crop="{{ rate.crop_name|escapejs }}"
+          data-crop-ur="{{ rate.crop_name_ur|default:''|escapejs }}"
+          data-mandi="{{ rate.mandi_name|escapejs }}"
+          data-region="{{ rate.region|escapejs }}"
+          data-price="{{ rate.price }}"
+          data-unit="{{ rate.unit }}"
+          data-change="{{ rate.price_change }}"
+          data-date="{% if rate.date_recorded %}{{ rate.date_recorded|date:'Y-m-d' }}{% endif %}"
+        >
           <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
-          <td><strong>{{ rate.crop_name }}</strong></td>
-          <td style="color:var(--text-muted);">{{ rate.crop_name_ur|default:"—" }}</td>
+
+          <td>
+            <strong>{{ rate.crop_name }}</strong>
+          </td>
+
+          <td style="color:var(--text-muted);">
+            {{ rate.crop_name_ur|default:"—" }}
+          </td>
+
           <td>{{ rate.mandi_name }}</td>
+
           <td>{{ rate.region }}</td>
-          <td><span class="price-chip">{{ rate.price|floatformat:0 }}</span></td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ rate.unit }}</td>
+
+          <td>
+            <span class="price-chip">{{ rate.price|floatformat:0 }}</span>
+          </td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ rate.unit }}
+          </td>
+
           <td>
             <span style="font-weight:700;font-size:13px;color:{% if rate.price_change > 0 %}var(--green-dark){% elif rate.price_change < 0 %}var(--red){% else %}var(--text-muted){% endif %};">
               {% if rate.price_change > 0 %}+{% endif %}{{ rate.price_change }}%
             </span>
           </td>
+
           <td>
             <span class="badge {% if rate.status == 'published' %}badge-green{% elif rate.status == 'pending' %}badge-amber{% else %}badge-gray{% endif %}">
               {{ rate.get_status_display }}
             </span>
           </td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ rate.date_recorded|date:"M d, Y" }}</td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ rate.date_recorded|date:"M d, Y" }}
+          </td>
+
           <td>
-            <button class="tbl-action view" onclick="viewRate({{ rate.pk }})"><i class="ph ph-eye"></i></button>
-            <button class="tbl-action edit" onclick="editRate({{ rate.pk }}, '{{ rate.crop_name }}', '{{ rate.mandi_name }}', '{{ rate.region }}', {{ rate.price }}, {{ rate.price_change }}, '{{ rate.status }}')"><i class="ph ph-pencil-simple"></i></button>
-            <button class="tbl-action del"  onclick="deleteRate({{ rate.pk }}, this)"><i class="ph ph-trash"></i></button>
+            <button class="tbl-action view" onclick="viewRate({{ rate.pk }})" title="View">
+              <i class="ph ph-eye"></i>
+            </button>
+
+            <button class="tbl-action edit" onclick="editRate({{ rate.pk }})" title="Edit">
+              <i class="ph ph-pencil-simple"></i>
+            </button>
+
+            <button class="tbl-action del" onclick="deleteRate({{ rate.pk }}, this)" title="Delete">
+              <i class="ph ph-trash"></i>
+            </button>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted);">No market rates yet. Click "Add New Rate" to begin.</td></tr>
+        <tr>
+          <td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No market rates yet. Click "Add New Rate" to begin.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- ── ADD / EDIT MODAL ──────────────────────────────────── -->
+<!-- ADD / EDIT MODAL -->
 <div class="modal-overlay" id="market-modal">
   <div class="modal">
     <div class="modal-header">
       <h2 id="market-modal-title">Add Market Rate</h2>
-      <button class="close-btn" onclick="closeModal('market-modal')"><i class="ph ph-x"></i></button>
+      <button class="close-btn" onclick="closeModal('market-modal')">
+        <i class="ph ph-x"></i>
+      </button>
     </div>
+
     <div class="modal-body">
       <input type="hidden" id="edit-rate-id">
+
       <div class="form-row">
-        <div class="fg"><label>Crop Name (English) *</label><input type="text" id="f-crop" placeholder="e.g. Wheat, Rice, Cotton"></div>
-        <div class="fg"><label>Crop Name (Urdu)</label><input type="text" id="f-crop-ur" placeholder="e.g. گندم، چاول" dir="rtl"></div>
+        <div class="fg">
+          <label>Crop Name (English) *</label>
+          <input type="text" id="f-crop" placeholder="e.g. Wheat, Rice, Cotton">
+        </div>
+
+        <div class="fg">
+          <label>Crop Name (Urdu)</label>
+          <input type="text" id="f-crop-ur" placeholder="e.g. گندم، چاول" dir="rtl">
+        </div>
       </div>
+
       <div class="form-row">
-        <div class="fg"><label>Mandi / Market *</label><input type="text" id="f-mandi" placeholder="e.g. Faisalabad Mandi"></div>
-        <div class="fg"><label>Region *</label><input type="text" id="f-region" placeholder="e.g. Punjab, Sindh"></div>
+        <div class="fg">
+          <label>Mandi / Market *</label>
+          <input type="text" id="f-mandi" placeholder="e.g. Faisalabad Mandi">
+        </div>
+
+        <div class="fg">
+          <label>Region *</label>
+          <input type="text" id="f-region" placeholder="e.g. Punjab, Sindh">
+        </div>
       </div>
+
       <div class="form-row">
-        <div class="fg"><label>Price (PKR) *</label><input type="number" id="f-price" placeholder="e.g. 4800"></div>
+        <div class="fg">
+          <label>Price (PKR) *</label>
+          <input type="number" id="f-price" placeholder="e.g. 4800">
+        </div>
+
         <div class="fg">
           <label>Unit</label>
           <select id="f-unit">
@@ -132,21 +230,34 @@
           </select>
         </div>
       </div>
+
       <div class="form-row">
-        <div class="fg"><label>Price Change % (vs yesterday)</label><input type="number" id="f-change" placeholder="e.g. 2.1 or -1.5" step="0.1"></div>
         <div class="fg">
-          <label>Status</label>
-          <select id="f-status">
-            <option value="published">Published</option>
-            <option value="pending">Pending Review</option>
-            <option value="draft">Draft</option>
-          </select>
+          <label>Price Change %</label>
+          <input type="number" id="f-change" placeholder="e.g. 2.1 or -1.5" step="0.1">
+        </div>
+
+        <div class="fg">
+          <label>Date Recorded</label>
+          <input type="date" id="f-date">
         </div>
       </div>
+
+      <div class="fg">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="published">Published</option>
+          <option value="pending">Pending Review</option>
+          <option value="draft">Draft</option>
+        </select>
+      </div>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('market-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRate()"><i class="ph ph-floppy-disk"></i> Save Rate</button>
+      <button class="btn btn-primary" id="rate-save-btn" onclick="saveRate()">
+        <i class="ph ph-floppy-disk"></i> Save Rate
+      </button>
     </div>
   </div>
 </div>
@@ -157,78 +268,166 @@
 <script>
 let editingId = null;
 
-function filterTable(q) {
-  q = q.toLowerCase();
-  const sf = document.getElementById('status-filter').value;
-  document.querySelectorAll('#market-tbody tr[data-id]').forEach(row => {
-    const text   = row.textContent.toLowerCase();
-    const status = row.dataset.status;
-    row.style.display = (text.includes(q) && (!sf || status === sf)) ? '' : 'none';
+function setRateForm(data = {}) {
+  document.getElementById('edit-rate-id').value = data.id || '';
+  document.getElementById('f-crop').value = data.crop_name || '';
+  document.getElementById('f-crop-ur').value = data.crop_name_ur || '';
+  document.getElementById('f-mandi').value = data.mandi_name || '';
+  document.getElementById('f-region').value = data.region || '';
+  document.getElementById('f-price').value = data.price || '';
+  document.getElementById('f-unit').value = data.unit || '40kg';
+  document.getElementById('f-change').value = data.price_change || 0;
+  document.getElementById('f-date').value = data.date_recorded || '';
+  document.getElementById('f-status').value = data.status || 'published';
+}
+
+function resetRateForm() {
+  editingId = null;
+
+  setRateForm({
+    id: '',
+    crop_name: '',
+    crop_name_ur: '',
+    mandi_name: '',
+    region: '',
+    price: '',
+    unit: '40kg',
+    price_change: 0,
+    date_recorded: '',
+    status: 'published'
   });
 }
 
-function editRate(id, crop, mandi, region, price, change, status) {
-  editingId = id;
-  document.getElementById('edit-rate-id').value = id;
-  document.getElementById('f-crop').value   = crop;
-  document.getElementById('f-mandi').value  = mandi;
-  document.getElementById('f-region').value = region;
-  document.getElementById('f-price').value  = price;
-  document.getElementById('f-change').value = change;
-  document.getElementById('f-status').value = status;
-  document.getElementById('market-modal-title').textContent = 'Edit Market Rate';
+function openNewRateModal() {
+  resetRateForm();
+
+  document.getElementById('market-modal-title').textContent = 'Add Market Rate';
+  document.getElementById('rate-save-btn').innerHTML = '<i class="ph ph-floppy-disk"></i> Save Rate';
+
   openModal('market-modal');
 }
 
-function viewRate(id) { toast(`Rate #${id} details — add a detail view modal for full history.`, 'success'); }
+function filterTable(q) {
+  q = q.toLowerCase();
+  const statusFilter = document.getElementById('status-filter').value;
+
+  document.querySelectorAll('#market-tbody tr[data-id]').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const status = row.dataset.status;
+
+    row.style.display = (
+      text.includes(q) &&
+      (!statusFilter || status === statusFilter)
+    ) ? '' : 'none';
+  });
+}
+
+function editRate(id) {
+  editingId = id;
+
+  const row = document.querySelector(`#market-tbody tr[data-id="${id}"]`);
+
+  if (!row) {
+    toast('Rate row not found.', 'error');
+    return;
+  }
+
+  setRateForm({
+    id: id,
+    crop_name: row.dataset.crop || '',
+    crop_name_ur: row.dataset.cropUr || '',
+    mandi_name: row.dataset.mandi || '',
+    region: row.dataset.region || '',
+    price: row.dataset.price || '',
+    unit: row.dataset.unit || '40kg',
+    price_change: row.dataset.change || 0,
+    date_recorded: row.dataset.date || '',
+    status: row.dataset.status || 'published',
+  });
+
+  document.getElementById('market-modal-title').textContent = 'Edit Market Rate';
+  document.getElementById('rate-save-btn').innerHTML = '<i class="ph ph-check-circle"></i> Update Rate';
+
+  openModal('market-modal');
+}
+
+function viewRate(id) {
+  const row = document.querySelector(`#market-tbody tr[data-id="${id}"]`);
+
+  if (!row) {
+    toast('Rate not found.', 'error');
+    return;
+  }
+
+  const msg = `${row.dataset.crop} | ${row.dataset.mandi}, ${row.dataset.region} | PKR ${row.dataset.price} / ${row.dataset.unit}`;
+  toast(msg, 'success');
+}
 
 async function saveRate() {
-  const crop  = document.getElementById('f-crop').value.trim();
+  const crop = document.getElementById('f-crop').value.trim();
   const mandi = document.getElementById('f-mandi').value.trim();
-  const region= document.getElementById('f-region').value.trim();
+  const region = document.getElementById('f-region').value.trim();
   const price = document.getElementById('f-price').value;
-  if (!crop || !mandi || !region || !price) { toast('Fill all required fields (*).', 'error'); return; }
+
+  if (!crop || !mandi || !region || !price) {
+    toast('Fill all required fields (*).', 'error');
+    return;
+  }
 
   const payload = {
-    crop_name:    crop,
-    crop_name_ur: document.getElementById('f-crop-ur').value,
-    mandi_name:   mandi,
-    region,
-    price,
-    unit:         document.getElementById('f-unit').value,
+    crop_name: crop,
+    crop_name_ur: document.getElementById('f-crop-ur').value.trim(),
+    mandi_name: mandi,
+    region: region,
+    price: price,
+    unit: document.getElementById('f-unit').value,
     price_change: document.getElementById('f-change').value || 0,
-    status:       document.getElementById('f-status').value,
+    date_recorded: document.getElementById('f-date').value || null,
+    status: document.getElementById('f-status').value,
   };
 
   const url = editingId
     ? `/market-rates/${editingId}/update/`
     : '/market-rates/create/';
-  const res = await api(url, 'POST', payload);
-  if (res.success) {
-    toast(res.message || 'Saved!', 'success');
-    closeModal('market-modal');
-    setTimeout(() => location.reload(), 800);
-  } else { toast(res.error || 'Error saving.', 'error'); }
+
+  try {
+    const res = await api(url, 'POST', payload);
+
+    if (res.success) {
+      toast(res.message || 'Market rate saved successfully.', 'success');
+      closeModal('market-modal');
+      setTimeout(() => location.reload(), 700);
+    } else {
+      toast(res.message || res.error || 'Error saving market rate.', 'error');
+    }
+  } catch (error) {
+    toast('Request failed. Please try again.', 'error');
+    console.error(error);
+  }
 }
 
 async function deleteRate(id, btn) {
   if (!confirm('Delete this rate? This cannot be undone.')) return;
-  const res = await api(`/market-rates/${id}/delete/`, 'POST');
-  if (res.success) {
-    const row = btn.closest('tr');
-    row.style.opacity = '0'; row.style.transform = 'translateX(16px)';
-    row.style.transition = 'all 0.3s'; setTimeout(() => row.remove(), 300);
-    toast(res.message, 'success');
-  } else { toast(res.error, 'error'); }
-}
 
-// Reset modal on open
-document.getElementById('market-modal').addEventListener('click', e => {});
-document.querySelector('[onclick="openModal(\'market-modal\')"]')?.addEventListener('click', () => {
-  editingId = null;
-  document.getElementById('market-modal-title').textContent = 'Add Market Rate';
-  ['f-crop','f-crop-ur','f-mandi','f-region','f-price','f-change'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-status').value = 'published';
-});
+  try {
+    const res = await api(`/market-rates/${id}/delete/`, 'POST');
+
+    if (res.success) {
+      const row = btn.closest('tr');
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(16px)';
+      row.style.transition = 'all 0.3s';
+
+      setTimeout(() => row.remove(), 300);
+
+      toast(res.message || 'Market rate deleted.', 'success');
+    } else {
+      toast(res.message || res.error || 'Delete failed.', 'error');
+    }
+  } catch (error) {
+    toast('Delete request failed.', 'error');
+    console.error(error);
+  }
+}
 </script>
 {% endblock %}

@@ -2,28 +2,101 @@
 {% block title %}Chat Monitoring{% endblock %}
 {% block page_title %}Chat Monitoring{% endblock %}
 {% block page_subtitle %}Live view of all farmer conversations{% endblock %}
+
 {% block content %}
-<div class="section-header"><div><h1>Chat Monitoring</h1><p>Monitor all active and past chat sessions.</p></div></div>
+
+<div class="section-header">
+  <div>
+    <h1>Chat Monitoring</h1>
+    <p>Monitor AI chatbot and expert chat sessions from farmers and mobile users.</p>
+  </div>
+</div>
+
 <div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <h3>Recent Chat Sessions</h3>
+      <p>{{ sessions|length }} latest session{{ sessions|length|pluralize }}</p>
+    </div>
+  </div>
+
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Session #</th><th>Farmer</th><th>Type</th><th>Topic</th><th>Messages</th><th>Status</th><th>Started</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Session #</th>
+          <th>Farmer</th>
+          <th>Type</th>
+          <th>Topic</th>
+          <th>Latest Messages</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Started</th>
+        </tr>
+      </thead>
+
       <tbody>
         {% for s in sessions %}
         <tr>
           <td style="color:var(--text-muted);">#{{ s.pk }}</td>
-          <td><strong>{{ s.farmer.get_full_name|default:s.farmer.username }}</strong></td>
-          <td><span class="badge badge-blue">{{ s.get_session_type_display }}</span></td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.topic|default:"General query" }}</td>
+
+          <td>
+            <strong>
+              {% if s.farmer %}
+                {{ s.farmer.get_full_name|default:s.farmer.username }}
+              {% else %}
+                Guest Farmer
+              {% endif %}
+            </strong>
+          </td>
+
+          <td>
+            <span class="badge badge-blue">{{ s.get_session_type_display }}</span>
+          </td>
+
+          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ s.topic|default:"General query" }}
+          </td>
+
+          <td style="min-width:260px;max-width:380px;">
+            {% with latest=s.messages.all|slice:":2" %}
+              {% for m in latest %}
+                <div style="font-size:12px;margin-bottom:5px;line-height:1.35;">
+                  <span class="badge {% if m.role == 'assistant' %}badge-green{% elif m.role == 'user' %}badge-amber{% else %}badge-gray{% endif %}" style="font-size:10px;padding:2px 6px;">
+                    {{ m.get_role_display }}
+                  </span>
+                  <span style="color:var(--text-muted);">
+                    {{ m.content|truncatechars:90 }}
+                  </span>
+                </div>
+              {% empty %}
+                <span style="font-size:12px;color:var(--text-muted);">No messages</span>
+              {% endfor %}
+            {% endwith %}
+          </td>
+
           <td>{{ s.message_count }}</td>
-          <td><span class="badge {% if s.status == 'active' %}badge-green{% else %}badge-gray{% endif %}">{{ s.get_status_display }}</span></td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ s.started_at|timesince }} ago</td>
+
+          <td>
+            <span class="badge {% if s.status == 'active' %}badge-green{% elif s.status == 'pending' %}badge-amber{% else %}badge-gray{% endif %}">
+              {{ s.get_status_display }}
+            </span>
+          </td>
+
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ s.started_at|timesince }} ago
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No chat sessions yet.</td></tr>
+        <tr>
+          <td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No chat sessions yet.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
 {% endblock %}

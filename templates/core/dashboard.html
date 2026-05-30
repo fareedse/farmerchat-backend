@@ -10,50 +10,48 @@
   <div class="stat-card fade-up">
     <div class="stat-card-top">
       <div class="stat-icon blue"><i class="ph ph-users"></i></div>
-      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> +12%</span>
+      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> Live</span>
     </div>
-    <div class="stat-val">{{ total_users|default:"12,458" }}</div>
+    <div class="stat-val">{{ total_users|default:"0" }}</div>
     <div class="stat-label">Total Users</div>
   </div>
+
   <div class="stat-card fade-up delay-1">
     <div class="stat-card-top">
       <div class="stat-icon green"><i class="ph ph-chats"></i></div>
-      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> +8%</span>
+      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> Live</span>
     </div>
-    <div class="stat-val">{{ active_chats|default:"24,032" }}</div>
+    <div class="stat-val">{{ active_chats|default:"0" }}</div>
     <div class="stat-label">Active Chats</div>
   </div>
+
   <div class="stat-card fade-up delay-2">
     <div class="stat-card-top">
       <div class="stat-icon amber"><i class="ph ph-plant"></i></div>
-      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> +15%</span>
+      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> Live</span>
     </div>
-    <div class="stat-val">{{ total_farmers|default:"3,762" }}</div>
+    <div class="stat-val">{{ total_farmers|default:"0" }}</div>
     <div class="stat-label">Farmers Registered</div>
   </div>
+
   <div class="stat-card fade-up delay-3">
     <div class="stat-card-top">
       <div class="stat-icon violet"><i class="ph ph-activity"></i></div>
-      <span class="stat-trend down"><i class="ph ph-arrow-down-right"></i> -3%</span>
+      <span class="stat-trend up"><i class="ph ph-arrow-up-right"></i> Live</span>
     </div>
-    <div class="stat-val">{{ expert_pct|default:"68" }}%</div>
+    <div class="stat-val">{{ expert_pct|default:"0" }}%</div>
     <div class="stat-label">Expert Availability</div>
   </div>
 </div>
 
 <!-- CHARTS ROW -->
 <div class="grid-2">
-  <!-- Chat Activity -->
   <div class="card fade-up">
     <div class="card-header">
       <div class="card-header-left">
         <h3>Chat Activity</h3>
+        <p>Last 7 days message activity</p>
       </div>
-      <select id="chatRangeSelect" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-h);outline:none;cursor:pointer;">
-        <option>Last 7 Days</option>
-        <option>Last 30 Days</option>
-        <option>Last 90 Days</option>
-      </select>
     </div>
     <div class="card-body-pad" style="padding-top:6px;">
       <div class="chart-wrap">
@@ -62,11 +60,11 @@
     </div>
   </div>
 
-  <!-- Join Trends -->
   <div class="card fade-up delay-1">
     <div class="card-header">
       <div class="card-header-left">
-        <h3>Recent Join Trends and Behavior</h3>
+        <h3>Recent Join Trends</h3>
+        <p>Farmer registrations in last 7 days</p>
       </div>
       <a href="{% url 'farmer_list' %}" class="btn-ghost" style="font-size:12px;">View All</a>
     </div>
@@ -86,37 +84,26 @@
     <div class="card-header">
       <div class="card-header-left">
         <h3>Today's Market Rates</h3>
-        <p>PKR / 40kg — Live Mandi Prices</p>
+        <p>Live mandi prices from database</p>
       </div>
       <a href="{% url 'market_rates' %}" class="btn btn-outline btn-sm">Manage All</a>
     </div>
+
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Crop</th><th>Mandi</th><th>Price</th><th>Change</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Crop</th>
+            <th>Mandi</th>
+            <th>Price</th>
+            <th>Change</th>
+          </tr>
+        </thead>
         <tbody id="dash-market-tbody">
           <tr>
-            <td><strong>Wheat (Gandam)</strong></td>
-            <td style="color:var(--text-muted);font-size:12px;">Faisalabad</td>
-            <td><span class="price-chip">4,800</span></td>
-            <td><span style="color:var(--green-dark);font-weight:700;font-size:12px;">+2.1%</span></td>
-          </tr>
-          <tr>
-            <td><strong>Rice (Basmati)</strong></td>
-            <td style="color:var(--text-muted);font-size:12px;">Lahore</td>
-            <td><span class="price-chip">9,200</span></td>
-            <td><span style="color:var(--green-dark);font-weight:700;font-size:12px;">+0.8%</span></td>
-          </tr>
-          <tr>
-            <td><strong>Cotton (Kapas)</strong></td>
-            <td style="color:var(--text-muted);font-size:12px;">Bahawalpur</td>
-            <td><span class="price-chip">6,400</span></td>
-            <td><span style="color:var(--green-dark);font-weight:700;font-size:12px;">+3.4%</span></td>
-          </tr>
-          <tr>
-            <td><strong>Sugarcane</strong></td>
-            <td style="color:var(--text-muted);font-size:12px;">Multan</td>
-            <td><span class="price-chip">450</span></td>
-            <td><span style="color:var(--red);font-weight:700;font-size:12px;">-1.2%</span></td>
+            <td colspan="4" style="text-align:center;padding:22px;color:var(--text-muted);">
+              Loading market rates...
+            </td>
           </tr>
         </tbody>
       </table>
@@ -132,38 +119,10 @@
       </div>
       <a href="{% url 'govt_schemes' %}" class="btn btn-outline btn-sm">Manage All</a>
     </div>
-    <div class="card-body" style="padding-top:10px;">
-      <div class="list-item">
-        <div class="list-avatar" style="background:#E6F7EE;color:#1E8449;"><i class="ph ph-tractor" style="font-size:17px;"></i></div>
-        <div class="list-content">
-          <h4>Kissan Card Subsidy 2026</h4>
-          <p>All Punjab · Till Dec 2026 · 12,400 beneficiaries</p>
-        </div>
-        <span class="badge badge-green">Active</span>
-      </div>
-      <div class="list-item">
-        <div class="list-avatar" style="background:#FFFBEB;color:#92400E;"><i class="ph ph-sun-horizon" style="font-size:17px;"></i></div>
-        <div class="list-content">
-          <h4>Solar Tube-well Provision</h4>
-          <p>South Punjab & Sindh · Starts next month</p>
-        </div>
-        <span class="badge badge-amber">Review</span>
-      </div>
-      <div class="list-item">
-        <div class="list-avatar" style="background:#EFF6FF;color:#1D4ED8;"><i class="ph ph-drop" style="font-size:17px;"></i></div>
-        <div class="list-content">
-          <h4>Drip Irrigation Subsidy</h4>
-          <p>Sindh & Balochistan · Ongoing</p>
-        </div>
-        <span class="badge badge-green">Active</span>
-      </div>
-      <div class="list-item">
-        <div class="list-avatar" style="background:#F5F3FF;color:#5B21B6;"><i class="ph ph-leaf" style="font-size:17px;"></i></div>
-        <div class="list-content">
-          <h4>Organic Farming Grant</h4>
-          <p>KPK · Applications open</p>
-        </div>
-        <span class="badge badge-gray">Draft</span>
+
+    <div class="card-body" id="dash-schemes-list" style="padding-top:10px;">
+      <div style="text-align:center;padding:22px;color:var(--text-muted);">
+        Loading schemes...
       </div>
     </div>
   </div>
@@ -171,24 +130,55 @@
 
 <!-- RECENT CHAT SESSIONS + IoT SNAPSHOT -->
 <div class="grid-2">
+
+  <!-- Recent Chat Sessions -->
   <div class="card fade-up">
     <div class="card-header">
-      <div class="card-header-left"><h3>Recent Chat Sessions</h3><p>Latest farmer queries via AI</p></div>
+      <div class="card-header-left">
+        <h3>Recent Chat Sessions</h3>
+        <p>Latest farmer queries via AI</p>
+      </div>
       <a href="{% url 'chat_monitoring' %}" class="btn-ghost" style="font-size:12px;">View All</a>
     </div>
+
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Farmer</th><th>Query</th><th>Lang</th><th>Status</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Farmer</th>
+            <th>Query</th>
+            <th>Lang</th>
+            <th>Status</th>
+          </tr>
+        </thead>
         <tbody>
           {% for s in recent_sessions %}
           <tr>
-            <td><strong>{{ s.farmer.get_full_name|default:s.farmer.username }}</strong></td>
-            <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);">{{ s.topic|default:"General crop query" }}</td>
+            <td>
+              <strong>
+                {% if s.farmer %}
+                  {{ s.farmer.get_full_name|default:s.farmer.username }}
+                {% else %}
+                  Guest Farmer
+                {% endif %}
+              </strong>
+            </td>
+            <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);">
+              {{ s.topic|default:"General crop query" }}
+            </td>
             <td><span class="badge badge-green">UR</span></td>
-            <td><span class="badge {% if s.status == 'active' %}badge-green{% else %}badge-gray{% endif %}">{{ s.get_status_display }}</span></td>
+            <td>
+              <span class="badge {% if s.status == 'active' %}badge-green{% else %}badge-gray{% endif %}">
+                {{ s.get_status_display }}
+              </span>
+            </td>
           </tr>
           {% empty %}
-          <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);">No sessions yet</td></tr>
+          <tr>
+            <td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);">
+              No sessions yet
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -198,30 +188,48 @@
   <!-- IoT Snapshot -->
   <div class="card fade-up delay-1">
     <div class="card-header">
-      <div class="card-header-left"><h3>IoT Live Snapshot</h3><p>Farm A — Faisalabad · NODE-001</p></div>
+      <div class="card-header-left">
+        <h3>IoT Live Snapshot</h3>
+        <p>Latest sensor reading</p>
+      </div>
       <span class="live-pill"><span class="live-dot"></span>Live</span>
     </div>
+
     <div class="card-body-pad">
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
-        <div style="text-align:center;padding:16px 10px;background:var(--bg);border-radius:10px;">
-          <div style="font-size:26px;font-weight:800;color:#2563EB;letter-spacing:-1px;" id="d-moisture">68<span style="font-size:13px;font-weight:500;">%</span></div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600;">💧 Moisture</div>
+
+          <div style="text-align:center;padding:16px 10px;background:var(--bg);border-radius:10px;">
           <div style="font-size:26px;font-weight:800;color:#2563EB;letter-spacing:-1px;" id="d-moisture">
-    {{ latest_reading.moisture|default:"0" }}<span style="font-size:13px;font-weight:500;">%</span>
-</div>
+            {{ latest_reading.moisture|default:"0" }}<span style="font-size:13px;font-weight:500;">%</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600;">💧 Moisture</div>
+          <div style="height:6px;background:#E5E7EB;border-radius:999px;margin-top:10px;overflow:hidden;">
+            <div id="d-mbar" style="height:100%;width:{{ latest_reading.moisture|default:0 }}%;background:#2563EB;border-radius:999px;"></div>
+          </div>
+        </div>
+
         <div style="text-align:center;padding:16px 10px;background:var(--bg);border-radius:10px;">
-          <div style="font-size:26px;font-weight:800;color:#D97706;letter-spacing:-1px;" id="d-temp">34<span style="font-size:13px;font-weight:500;">°C</span></div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600;">🌡️ Temp</div>
           <div style="font-size:26px;font-weight:800;color:#D97706;letter-spacing:-1px;" id="d-temp">
-    {{ latest_reading.temperature|default:"0" }}<span style="font-size:13px;font-weight:500;">°C</span>
-</div>
+            {{ latest_reading.temperature|default:"0" }}<span style="font-size:13px;font-weight:500;">°C</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600;">🌡️ Temp</div>
+          <div style="height:6px;background:#E5E7EB;border-radius:999px;margin-top:10px;overflow:hidden;">
+            <div id="d-tbar" style="height:100%;width:50%;background:#D97706;border-radius:999px;"></div>
+          </div>
+        </div>
+
         <div style="text-align:center;padding:16px 10px;background:var(--bg);border-radius:10px;">
-          <div style="font-size:26px;font-weight:800;color:#7C3AED;letter-spacing:-1px;" id="d-humidity">72<span style="font-size:13px;font-weight:500;">%</span></div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600;">🌫️ Humidity</div>
           <div style="font-size:26px;font-weight:800;color:#7C3AED;letter-spacing:-1px;" id="d-humidity">
-    {{ latest_reading.humidity|default:"0" }}<span style="font-size:13px;font-weight:500;">%</span>
-</div>
+            {{ latest_reading.humidity|default:"0" }}<span style="font-size:13px;font-weight:500;">%</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600;">🌫️ Humidity</div>
+          <div style="height:6px;background:#E5E7EB;border-radius:999px;margin-top:10px;overflow:hidden;">
+            <div id="d-hbar" style="height:100%;width:{{ latest_reading.humidity|default:0 }}%;background:#7C3AED;border-radius:999px;"></div>
+          </div>
+        </div>
+
       </div>
+
       <a href="{% url 'iot_dashboard' %}" class="btn btn-outline" style="width:100%;justify-content:center;">
         <i class="ph ph-cpu"></i> Full Sensor Dashboard
       </a>
@@ -233,9 +241,25 @@
 
 {% block extra_js %}
 <script>
-// ── Chart data from Django context ──────────────────────────
 const chatData = {{ chat_activity|safe }};
 const joinData = {{ join_trends|safe }};
+
+function safeNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function formatPrice(value) {
+  const n = parseFloat(value || 0);
+  return n.toLocaleString('en-PK');
+}
+
+function statusBadgeClass(status) {
+  if (status === 'active' || status === 'published') return 'badge-green';
+  if (status === 'review' || status === 'pending') return 'badge-amber';
+  if (status === 'draft') return 'badge-gray';
+  return 'badge-gray';
+}
 
 // Chat Activity Chart
 new Chart(document.getElementById('chatChart'), {
@@ -243,21 +267,34 @@ new Chart(document.getElementById('chatChart'), {
   data: {
     labels: chatData.map(d => d.label),
     datasets: [{
-      data: chatData.map(d => d.count || Math.floor(Math.random()*2000+1200)),
+      data: chatData.map(d => d.count || 0),
       borderColor: '#2ECC71',
       backgroundColor: 'rgba(46,204,113,0.08)',
-      fill: true, tension: 0.45,
+      fill: true,
+      tension: 0.45,
       borderWidth: 2.5,
-      pointRadius: 0, pointHoverRadius: 4,
+      pointRadius: 0,
+      pointHoverRadius: 4,
       pointHoverBackgroundColor: '#2ECC71',
     }]
   },
   options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { mode: 'index', intersect: false }
+    },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#8A9E94' } },
-      y: { grid: { color: '#F0F4F2' }, ticks: { font: { size: 11 }, color: '#8A9E94' } }
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11 }, color: '#8A9E94' }
+      },
+      y: {
+        grid: { color: '#F0F4F2' },
+        ticks: { font: { size: 11 }, color: '#8A9E94' },
+        beginAtZero: true
+      }
     }
   }
 });
@@ -268,10 +305,11 @@ new Chart(document.getElementById('joinChart'), {
   data: {
     labels: joinData.map(d => d.label),
     datasets: [{
-      data: joinData.map(d => d.count || Math.floor(Math.random()*600+200)),
+      data: joinData.map(d => d.count || 0),
       borderColor: '#3B82F6',
       backgroundColor: 'rgba(59,130,246,0.0)',
-      fill: false, tension: 0.4,
+      fill: false,
+      tension: 0.4,
       borderWidth: 2,
       pointRadius: 4,
       pointBackgroundColor: '#3B82F6',
@@ -280,61 +318,152 @@ new Chart(document.getElementById('joinChart'), {
     }]
   },
   options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#8A9E94' } },
-      y: { grid: { color: '#F0F4F2' }, ticks: { font: { size: 11 }, color: '#8A9E94' } }
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11 }, color: '#8A9E94' }
+      },
+      y: {
+        grid: { color: '#F0F4F2' },
+        ticks: { font: { size: 11 }, color: '#8A9E94' },
+        beginAtZero: true
+      }
     }
   }
 });
 
-// ── IoT live simulation (replace with fetch() in production) ─
-// ── IoT Real-Time Data (Asli Sensor Data) ──
-async function updateRealIoT() {
-    try {
-        // Ye line aapke Django server se sabse taaza data mangwayegi
-        const response = await fetch('/iot/live/api/'); 
-        const data = await response.json();
-        
-        if (!data.error) {
-            const m = data.moisture;
-            const t = data.temperature;
-            const h = data.humidity;
-
-          
-            document.getElementById('d-moisture').innerHTML = `${m}<span style="font-size:13px;font-weight:500;">%</span>`;
-            document.getElementById('d-temp').innerHTML     = `${t}<span style="font-size:13px;font-weight:500;">°C</span>`;
-            document.getElementById('d-humidity').innerHTML = `${h}<span style="font-size:13px;font-weight:500;">%</span>`;
-            
-            document.getElementById('d-mbar').style.width = `${m}%`;
-            document.getElementById('d-tbar').style.width = `${(t/50)*100}%`;
-            document.getElementById('d-hbar').style.width = `${h}%`;
-            
-            console.log("Real Data Updated:", data);
-        }
-    } catch (e) {
-        console.log("Waiting for bridge data...");
-    }
-}
-
-setInterval(updateRealIoT, 3000);
-
-// ── Load live market rates from API ─────────────────────────
+// Load live market rates from API
 async function loadMarketRates() {
+  const tbody = document.getElementById('dash-market-tbody');
+
   try {
     const data = await api('{% url "market_rates_api" %}');
-    if (!data.rates?.length) return;
-    const tbody = document.getElementById('dash-market-tbody');
-    tbody.innerHTML = data.rates.slice(0,4).map(r => `
+
+    if (!data.success || !data.rates || !data.rates.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center;padding:22px;color:var(--text-muted);">
+            No published market rates found.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = data.rates.slice(0, 5).map(r => {
+      const direction = r.direction || 'stable';
+      const change = r.price_change || r.change_percent || 0;
+      const color = direction === 'up'
+        ? 'var(--green-dark)'
+        : direction === 'down'
+          ? 'var(--red)'
+          : 'var(--text-muted)';
+
+      const sign = direction === 'up' && parseFloat(change) > 0 ? '+' : '';
+
+      return `
+        <tr>
+          <td><strong>${r.crop_name || '-'}</strong></td>
+          <td style="color:var(--text-muted);font-size:12px;">${r.mandi_name || '-'}</td>
+          <td><span class="price-chip">${formatPrice(r.price)}</span></td>
+          <td>
+            <span style="color:${color};font-weight:700;font-size:12px;">
+              ${sign}${change}%
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (error) {
+    tbody.innerHTML = `
       <tr>
-        <td><strong>${r.crop}</strong></td>
-        <td style="color:var(--text-muted);font-size:12px;">${r.mandi}</td>
-        <td><span class="price-chip">${parseFloat(r.price).toLocaleString('en-PK')}</span></td>
-        <td><span style="color:${r.direction==='up'?'var(--green-dark)':'var(--red)'};font-weight:700;font-size:12px;">${r.direction==='up'?'+':''}${r.change}%</span></td>
-      </tr>`).join('');
-  } catch(e) { /* keep placeholder data */ }
+        <td colspan="4" style="text-align:center;padding:22px;color:var(--text-muted);">
+          Unable to load market rates.
+        </td>
+      </tr>
+    `;
+    console.error(error);
+  }
 }
+
+// Load active government schemes from API
+async function loadSchemes() {
+  const list = document.getElementById('dash-schemes-list');
+
+  try {
+    const data = await api('{% url "schemes_api" %}');
+
+    if (!data.success || !data.schemes || !data.schemes.length) {
+      list.innerHTML = `
+        <div style="text-align:center;padding:22px;color:var(--text-muted);">
+          No active government schemes found.
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = data.schemes.slice(0, 4).map(s => {
+      const deadline = s.deadline || 'Ongoing';
+      const badgeClass = statusBadgeClass(s.status);
+
+      return `
+        <div class="list-item">
+          <div class="list-avatar" style="background:#E6F7EE;color:#1E8449;">
+            <i class="ph ph-tractor" style="font-size:17px;"></i>
+          </div>
+          <div class="list-content">
+            <h4>${s.title || '-'}</h4>
+            <p>${s.region || s.target_region || 'All Regions'} · ${deadline} · ${s.beneficiaries || 0} beneficiaries</p>
+          </div>
+          <span class="badge ${badgeClass}">${s.status || 'active'}</span>
+        </div>
+      `;
+    }).join('');
+
+  } catch (error) {
+    list.innerHTML = `
+      <div style="text-align:center;padding:22px;color:var(--text-muted);">
+        Unable to load schemes.
+      </div>
+    `;
+    console.error(error);
+  }
+}
+
+// IoT real-time data
+async function updateRealIoT() {
+  try {
+    const response = await fetch('{% url "iot_live" %}');
+    const data = await response.json();
+
+    if (!data.success) return;
+
+    const moisture = safeNumber(data.moisture);
+    const temp = safeNumber(data.temperature);
+    const humidity = safeNumber(data.humidity);
+
+    document.getElementById('d-moisture').innerHTML = `${moisture}<span style="font-size:13px;font-weight:500;">%</span>`;
+    document.getElementById('d-temp').innerHTML = `${temp}<span style="font-size:13px;font-weight:500;">°C</span>`;
+    document.getElementById('d-humidity').innerHTML = `${humidity}<span style="font-size:13px;font-weight:500;">%</span>`;
+
+    document.getElementById('d-mbar').style.width = `${Math.min(Math.max(moisture, 0), 100)}%`;
+    document.getElementById('d-tbar').style.width = `${Math.min(Math.max((temp / 50) * 100, 0), 100)}%`;
+    document.getElementById('d-hbar').style.width = `${Math.min(Math.max(humidity, 0), 100)}%`;
+
+  } catch (error) {
+    console.log('Waiting for IoT data...');
+  }
+}
+
 loadMarketRates();
+loadSchemes();
+updateRealIoT();
+setInterval(updateRealIoT, 3000);
 </script>
 {% endblock %}
