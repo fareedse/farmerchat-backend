@@ -7,18 +7,17 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # BASE
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # SECURITY
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
@@ -29,19 +28,17 @@ DEBUG = os.environ.get("DEBUG", "True").lower() in ["true", "1", "yes"]
 
 ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
-    "127.0.0.1,localhost,*"
+    "127.0.0.1,localhost,.pythonanywhere.com"
 ).split(",")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # APPS
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 INSTALLED_APPS = [
     "corsheaders",
 
     "django.contrib.admin",
-    "corsheaders",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -51,53 +48,36 @@ INSTALLED_APPS = [
     "core",
 ]
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # MIDDLEWARE
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
-    "corsheaders.middleware.CorsMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# =============================================================================
+# URLS / WSGI
+# =============================================================================
 
 ROOT_URLCONF = "farmerchat.urls"
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5000",
-    "http://localhost:8080",
-    "http://localhost:1234",
-    "http://localhost:63143",  # flutter web port
-]
+WSGI_APPLICATION = "farmerchat.wsgi.application"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # TEMPLATES
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 TEMPLATES = [
     {
@@ -117,38 +97,20 @@ TEMPLATES = [
     }
 ]
 
-
-WSGI_APPLICATION = "farmerchat.wsgi.application"
-
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # DATABASE
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
-
-if DATABASE_URL:
-    # For this simple project, SQLite is default.
-    # If you later use PostgreSQL on Render/Railway, install dj-database-url
-    # and configure DATABASE_URL properly.
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # PASSWORD VALIDATION
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -165,20 +127,21 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # INTERNATIONALIZATION
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 LANGUAGE_CODE = "en-us"
+
 TIME_ZONE = "Asia/Karachi"
+
 USE_I18N = True
+
 USE_TZ = True
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # STATIC / MEDIA
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 STATIC_URL = "/static/"
 
@@ -193,67 +156,77 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # AUTH REDIRECTS
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/login/"
 
+# =============================================================================
+# CORS
+# =============================================================================
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CORS / CSRF
-# Flutter app and web frontend can call APIs.
-# ─────────────────────────────────────────────────────────────────────────────
+# Development-friendly setting
+CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG
-
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000"
-    ).split(",")
-    if origin.strip()
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# If you later need cookies/auth between domains:
+# CORS_ALLOW_CREDENTIALS = True
+
+# =============================================================================
+# CSRF
+# =============================================================================
 
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get(
-        "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:8000,http://127.0.0.1:8000"
-    ).split(",")
-    if origin.strip()
+    "https://fareedse.pythonanywhere.com",
 ]
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # SECURITY SETTINGS FOR PRODUCTION
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
 
-    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "False").lower() in ["true", "1", "yes"]
-    CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", "False").lower() in ["true", "1", "yes"]
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
-    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "False").lower() in ["true", "1", "yes"]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # DEFAULTS
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # PROJECT CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-IOT_API_SECRET = os.environ.get("IOT_API_SECRET", "iot-secret-change-me")
+
+IOT_API_SECRET = os.environ.get(
+    "IOT_API_SECRET",
+    "iot-secret-change-me"
+)
