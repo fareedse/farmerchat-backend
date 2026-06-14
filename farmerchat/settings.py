@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "corsheaders",
 
     "django.contrib.admin",
+    "corsheaders",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -56,6 +57,10 @@ INSTALLED_APPS = [
 # ─────────────────────────────────────────────────────────────────────────────
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
@@ -71,6 +76,23 @@ MIDDLEWARE = [
 
 
 ROOT_URLCONF = "farmerchat.urls"
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://localhost:8080",
+    "http://localhost:1234",
+    "http://localhost:63143",  # flutter web port
+]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

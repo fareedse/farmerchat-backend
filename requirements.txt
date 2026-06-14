@@ -8,3 +8,4 @@ anthropic
 requests
 beautifulsoup4
 lxml
+django-cors-headers

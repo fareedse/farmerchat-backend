@@ -1205,7 +1205,7 @@ def iot_ingest(request):
         return json_error(str(e), status=400)
 
 
-@login_required
+@require_GET
 def iot_live_api(request):
     node_id = request.GET.get("node", "").strip()
 
@@ -1213,36 +1213,44 @@ def iot_live_api(request):
         queryset = SensorReading.objects.select_related("device")
 
         if node_id:
-            queryset = queryset.filter(device__device_id=node_id)
+            queryset = queryset.filter(
+                device__device_id__iexact=node_id
+            )
 
         reading = queryset.latest("timestamp")
 
         return JsonResponse({
             "success": True,
-            **serialize_sensor_reading(reading),
+            "reading": serialize_sensor_reading(reading)
         })
 
     except SensorReading.DoesNotExist:
-        return json_error("No sensor data available yet.", status=404)
+        return JsonResponse({
+            "success": False,
+            "message": "No sensor data available."
+        }, status=404)
 
-
-@login_required
+@require_GET
 def iot_history_api(request):
     node_id = request.GET.get("node", "").strip()
 
     queryset = SensorReading.objects.select_related("device")
 
     if node_id:
-        queryset = queryset.filter(device__device_id=node_id)
+        queryset = queryset.filter(
+            device__device_id__iexact=node_id
+        )
 
-    readings = list(reversed(list(queryset.order_by("-timestamp")[:24])))
+    readings = queryset.order_by("-timestamp")[:24]
 
     return JsonResponse({
         "success": True,
         "count": len(readings),
-        "readings": [serialize_sensor_reading(reading) for reading in readings],
+        "readings": [
+            serialize_sensor_reading(r)
+            for r in readings
+        ]
     })
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ANALYTICS / CONTENT / SETTINGS
