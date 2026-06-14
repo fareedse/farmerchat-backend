@@ -1204,7 +1204,7 @@ def iot_ingest(request):
     except Exception as e:
         return json_error(str(e), status=400)
 
-
+@csrf_exempt
 @require_GET
 def iot_live_api(request):
     node_id = request.GET.get("node", "").strip()
@@ -1230,6 +1230,7 @@ def iot_live_api(request):
             "message": "No sensor data available."
         }, status=404)
 
+@csrf_exempt
 @require_GET
 def iot_history_api(request):
     node_id = request.GET.get("node", "").strip()
