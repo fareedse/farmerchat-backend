@@ -25,6 +25,16 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from django.contrib import messages
 from django.conf import settings
+import google.generativeai as genai
+from django.conf import settings
+
+genai.configure(
+    api_key=settings.GEMINI_API_KEY
+)
+
+model = genai.GenerativeModel(
+    "gemini-2.5-flash"
+)
 
 from .models import (
     FarmerProfile,
@@ -43,6 +53,163 @@ from .models import (
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+def get_latest_sensor_context():
+    reading = (
+        SensorReading.objects
+        .select_related("device")
+        .order_by("-timestamp")
+        .first()
+    )
+
+    if not reading:
+        return "No sensor data available."
+
+    return f"""
+Device: {reading.device.device_id}
+Farm: {reading.device.farm_name}
+Location: {reading.device.location}
+
+Moisture: {reading.moisture}
+Temperature: {reading.temperature}
+Humidity: {reading.humidity}
+
+Timestamp:
+{reading.timestamp}
+"""
+
+def get_market_context():
+    rates = (
+        MarketRate.objects
+        .filter(status="published")
+        .order_by("-date_recorded")[:10]
+    )
+
+    if not rates:
+        return "No market rates available."
+
+    data = []
+
+    for r in rates:
+        data.append(
+            f"""
+Crop: {r.crop_name}
+Region: {r.region}
+Mandi: {r.mandi_name}
+Price: {r.price}
+Unit: {r.unit}
+"""
+        )
+
+    return "\n".join(data)
+
+
+def get_scheme_context():
+    schemes = (
+        GovernmentScheme.objects
+        .filter(status="active")
+        .order_by("-created_at")[:10]
+    )
+
+    if not schemes:
+        return "No schemes available."
+
+    data = []
+
+    for s in schemes:
+        data.append(
+            f"""
+Title: {s.title}
+Region: {s.target_region}
+Category: {s.category}
+
+Description:
+{s.description}
+"""
+        )
+
+    return "\n".join(data)
+def ask_gemini(message):
+
+    market_context = get_market_context()
+
+    scheme_context = get_scheme_context()
+
+    sensor_context = get_latest_sensor_context()
+
+    web_context = web_search(message)
+
+    prompt = f"""
+You are FarmerGPT.
+
+Supported languages:
+
+- English
+- Urdu
+- Arabic
+- Hindi
+
+Rules:
+
+1. Detect language automatically.
+2. Reply in same language.
+3. First use database information.
+4. Use IoT sensor data.
+5. Use government schemes.
+6. Use market rates.
+7. If data not available in database, clearly state:
+   'This information is not available in our system.'
+8. Then use web search results.
+9. Never hallucinate.
+10. Give practical farming advice.
+
+DATABASE MARKET DATA:
+
+{market_context}
+
+DATABASE SCHEMES:
+
+{scheme_context}
+
+DATABASE IOT DATA:
+
+{sensor_context}
+
+WEB SEARCH RESULTS:
+
+{web_context}
+
+USER QUESTION:
+
+{message}
+"""
+
+    response = model.generate_content(prompt)
+
+    return response.text
+
+
+from duckduckgo_search import DDGS
+
+
+def web_search(query):
+    try:
+        results = []
+
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, max_results=5):
+                results.append(
+                    f"""
+Title: {r.get('title')}
+Body: {r.get('body')}
+URL: {r.get('href')}
+"""
+                )
+
+        return "\n".join(results)
+
+    except Exception:
+        return "No web results found."
+
 
 def is_staff_user(user):
     return user.is_authenticated and user.is_staff
@@ -144,6 +311,56 @@ def logout_view(request):
 # ─────────────────────────────────────────────────────────────────────────────
 # DASHBOARD
 # ─────────────────────────────────────────────────────────────────────────────
+from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
+
+
+@csrf_exempt
+@require_POST
+def register_api(request):
+    data = get_json_body(request)
+
+    full_name = data.get("full_name", "").strip()
+    email = data.get("email", "").strip().lower()
+    phone = data.get("phone", "").strip()
+    location = data.get("location", "").strip()
+    farm_type = data.get("farm_type", "").strip()
+    password = data.get("password", "").strip()
+
+    if not all([full_name, email, phone, location, farm_type, password]):
+        return json_error("All fields are required.", status=400)
+
+    if User.objects.filter(username=email).exists():
+        return json_error("Account already exists.", status=400)
+
+    try:
+        names = full_name.split(" ", 1)
+
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=password,
+            first_name=names[0],
+            last_name=names[1] if len(names) > 1 else "",
+        )
+
+        FarmerProfile.objects.create(
+            user=user,
+            phone=phone,
+            region=location,
+            primary_crop=farm_type,
+        )
+
+        return json_success(
+            {
+                "user_id": user.id,
+            },
+            message="Account created successfully",
+            status=201,
+        )
+
+    except Exception as e:
+        return json_error(str(e), status=400)
 
 @login_required
 @user_passes_test(is_staff_user)
@@ -602,6 +819,48 @@ def serialize_scheme(scheme):
         "updated_at": scheme.updated_at.isoformat() if getattr(scheme, "updated_at", None) else None,
     }
 
+@csrf_exempt
+@require_POST
+def login_api(request):
+    data = get_json_body(request)
+
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "").strip()
+
+    if not email or not password:
+        return json_error(
+            "Email and password are required.",
+            status=400
+        )
+
+    user = authenticate(
+        request,
+        username=email,
+        password=password
+    )
+
+    if not user:
+        return json_error(
+            "Invalid email or password.",
+            status=401
+        )
+
+    login(request, user)
+
+    role = "Admin" if user.is_staff else "User"
+
+    return json_success(
+        {
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.get_full_name(),
+                "role": role,
+                "is_staff": user.is_staff,
+            }
+        },
+        message="Login successful"
+    )
 
 def serialize_sensor_reading(reading):
     return {
@@ -1056,40 +1315,39 @@ def save_chat_log(request, message, reply, intent, language="en"):
 @csrf_exempt
 @require_POST
 def chatbot_api(request):
-    """
-    Flutter chatbot endpoint.
-
-    Expected body:
-    {
-        "message": "What is wheat rate in Faisalabad?",
-        "language": "en"
-    }
-    """
 
     data = get_json_body(request)
+
     message = data.get("message", "").strip()
-    language = data.get("language", "en")
 
     if not message:
-        return json_error("Message is required.", status=400)
+        return JsonResponse({
+            "success": False,
+            "message": "Message required"
+        })
 
-    result = generate_chatbot_reply(message)
+    try:
 
-    session = save_chat_log(
-        request=request,
-        message=message,
-        reply=result["reply"],
-        intent=result["intent"],
-        language=language,
-    )
+        reply = ask_gemini(message)
 
-    return JsonResponse({
-        "success": True,
-        "intent": result["intent"],
-        "reply": result["reply"],
-        "data": result.get("data"),
-        "session_id": session.pk if session else None,
-    })
+        save_chat_log(
+            request=request,
+            message=message,
+            reply=reply,
+            intent="gemini_ai"
+        )
+
+        return JsonResponse({
+            "success": True,
+            "reply": reply
+        })
+
+    except Exception as e:
+
+        return JsonResponse({
+            "success": False,
+            "message": str(e)
+        })
 
 
 # ─────────────────────────────────────────────────────────────────────────────

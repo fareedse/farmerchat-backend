@@ -9,3 +9,5 @@ requests
 beautifulsoup4
 lxml
 django-cors-headers
+google-generativeai
+duckduckgo-search

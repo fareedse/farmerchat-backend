@@ -4,11 +4,24 @@ from . import views
 
 urlpatterns = [
     # Root
-    path('', lambda r: redirect('dashboard' if r.user.is_authenticated else 'login'), name='home'),
+   from django.views.generic import RedirectView
 
+path(
+    '',
+    RedirectView.as_view(
+        pattern_name='dashboard',
+        permanent=False
+    ),
+)
     # Auth
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('api/register/', views.register_api, name='register_api'),
+    path(
+    "api/login/",
+    views.login_api,
+    name="login_api"
+),
 
     # Dashboard
     path('dashboard/', views.dashboard_view, name='dashboard'),
