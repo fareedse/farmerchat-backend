@@ -27,6 +27,9 @@ from django.contrib import messages
 from django.conf import settings
 import google.generativeai as genai
 from django.conf import settings
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Notification
 
 genai.configure(
     api_key=settings.GEMINI_API_KEY
@@ -1552,3 +1555,65 @@ def content_management(request):
 @user_passes_test(is_staff_user)
 def settings_view(request):
     return render(request, "core/settings.html")
+
+
+@login_required
+def notifications_api(request):
+    notifications = Notification.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
+    data = []
+
+    for n in notifications:
+        data.append({
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "type": n.notification_type,
+            "priority": n.priority,
+            "action": n.action,
+            "is_read": n.is_read,
+            "created_at": n.created_at.strftime("%d %b %Y %I:%M %p"),
+        })
+
+    return JsonResponse({
+        "success": True,
+        "notifications": data,
+    })
+
+
+@login_required
+def unread_notification_count(request):
+    count = Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).count()
+
+    return JsonResponse({
+        "success": True,
+        "count": count
+    })
+
+
+
+@login_required
+def mark_notification_read(request, notification_id):
+    try:
+        notification = Notification.objects.get(
+            id=notification_id,
+            user=request.user
+        )
+
+        notification.is_read = True
+        notification.save()
+
+        return JsonResponse({
+            "success": True
+        })
+
+    except Notification.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "message": "Notification not found"
+        }, status=404)

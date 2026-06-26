@@ -65,4 +65,21 @@ path(
     path('api/schemes/', views.schemes_api, name='schemes_api'),
     path('api/schemes/<int:pk>/', views.scheme_detail_api, name='scheme_detail_api'),
     path('api/chatbot/', views.chatbot_api, name='chatbot_api'),
+
+    #notifications 
+
+    path(
+    "notifications/",
+    views.notifications_api,
+    name="notifications_api"),
+
+path(
+    "notifications/unread-count/",
+    views.unread_notification_count,
+    name="notification_count"),
+
+path(
+    "notifications/<int:notification_id>/read/",
+    views.mark_notification_read,
+    name="notification_read"),
 ]
