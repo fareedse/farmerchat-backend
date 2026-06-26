@@ -1,18 +1,13 @@
 from django.urls import path
 from django.shortcuts import redirect
+from django.views.generic import RedirectView
 from . import views
 
 urlpatterns = [
     # Root
-   from django.views.generic import RedirectView
+   
 
-path(
-    '',
-    RedirectView.as_view(
-        pattern_name='dashboard',
-        permanent=False
-    ),
-)
+  path('', views.dashboard_view, name='dashboard'),
     # Auth
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
@@ -21,7 +16,7 @@ path(
     "api/login/",
     views.login_api,
     name="login_api"
-),
+    ),
 
     # Dashboard
     path('dashboard/', views.dashboard_view, name='dashboard'),
@@ -73,12 +68,12 @@ path(
     views.notifications_api,
     name="notifications_api"),
 
-path(
+   path(
     "notifications/unread-count/",
     views.unread_notification_count,
     name="notification_count"),
 
-path(
+   path(
     "notifications/<int:notification_id>/read/",
     views.mark_notification_read,
     name="notification_read"),
