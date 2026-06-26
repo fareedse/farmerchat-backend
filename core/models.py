@@ -17,7 +17,71 @@ Complete schema for all modules:
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.conf import settings
 
+
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ("soil", "Soil Moisture"),
+        ("weather", "Weather"),
+        ("ai_report", "AI Report"),
+        ("followup", "AI Follow Up"),
+        ("profile", "Profile"),
+        ("system", "System"),
+    ]
+
+    PRIORITY_CHOICES = [
+        ("low", "Low"),
+        ("normal", "Normal"),
+        ("high", "High"),
+        ("critical", "Critical"),
+    ]
+
+    ACTION_CHOICES = [
+        ("iot", "IoT Screen"),
+        ("weather", "Weather Screen"),
+        ("chat", "Chat Screen"),
+        ("report", "AI Report"),
+        ("profile", "Profile"),
+        ("none", "None"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+
+    title = models.CharField(max_length=200)
+
+    message = models.TextField()
+
+    notification_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES
+    )
+
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default="normal"
+    )
+
+    action = models.CharField(
+        max_length=20,
+        choices=ACTION_CHOICES,
+        default="none"
+    )
+
+    is_read = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. FARMER PROFILE
