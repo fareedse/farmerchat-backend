@@ -37,6 +37,7 @@ ALLOWED_HOSTS = os.environ.get(
 
 INSTALLED_APPS = [
     "corsheaders",
+    "notifications",
 
     "django.contrib.admin",
     "django.contrib.auth",
