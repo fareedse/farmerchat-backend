@@ -25,18 +25,14 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from django.contrib import messages
 from django.conf import settings
-import google.generativeai as genai
+from openai import OpenAI
 from django.conf import settings
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import Notification
 
-genai.configure(
-    api_key=settings.GEMINI_API_KEY
-)
-
-model = genai.GenerativeModel(
-    "gemini-2.5-flash"
+client = OpenAI(
+    api_key=settings.OPENAI_API_KEY,
 )
 
 from .models import (
@@ -131,87 +127,295 @@ Description:
         )
 
     return "\n".join(data)
-def ask_gemini(message):
+from langdetect import detect
+
+def ask_openai(message, history=None, productivity_prediction=None):
+
+    try:
+        lang = detect(message)
+    except:
+        lang = "en"
 
     market_context = get_market_context()
-
     scheme_context = get_scheme_context()
-
     sensor_context = get_latest_sensor_context()
 
-    web_context = web_search(message)
+    # Only search web for recent/current information
+    web_keywords = [
+        "today",
+        "latest",
+        "current",
+        "price",
+        "market",
+        "online",
+        "news",
+        "weather",
+        "scheme",
+        "2026"
+    ]
 
-    prompt = f"""
+    web_context = ""
+
+    if any(word in message.lower() for word in web_keywords):
+        web_context = web_search(message)
+
+    prediction_context = ""
+
+    if productivity_prediction:
+        prediction_context = productivity_prediction
+
+    system_prompt = f"""
 You are FarmerGPT.
 
-Supported languages:
+You are an advanced AI assistant for farmers in Pakistan.
 
-- English
-- Urdu
-- Arabic
-- Hindi
+=========================
+LANGUAGE
+=========================
 
-Rules:
+Reply ONLY in the same language as the user's message.
 
-1. Detect language automatically.
-2. Reply in same language.
-3. First use database information.
-4. Use IoT sensor data.
-5. Use government schemes.
-6. Use market rates.
-7. If data not available in database, clearly state:
-   'This information is not available in our system.'
-8. Then use web search results.
-9. Never hallucinate.
-10. Give practical farming advice.
+Detected language:
+{lang}
 
-DATABASE MARKET DATA:
+Examples:
+
+English -> English
+
+Urdu -> Urdu
+
+Hindi -> Hindi
+
+Arabic -> Arabic
+
+Never translate unless asked.
+
+=========================
+GENERAL KNOWLEDGE
+=========================
+
+You can answer BOTH:
+
+• Agriculture questions
+• General knowledge
+• Science
+• Technology
+• Education
+• Business
+• Internet
+• Programming
+
+Do NOT refuse general questions.
+
+=========================
+PRIORITY
+=========================
+
+1 Database
+2 IoT
+3 Productivity Prediction
+4 Web Search
+5 Your own knowledge
+
+=========================
+IMPORTANT
+=========================
+
+Use database ONLY when relevant.
+
+If user asks unrelated questions like
+
+"What is AI?"
+
+"Price of Apple online"
+
+"Who is Elon Musk?"
+
+"Python programming"
+
+then answer normally using your own knowledge plus web search if available.
+
+Do NOT force agriculture context.
+
+=========================
+DATABASE
+=========================
+
+Market Rates
 
 {market_context}
 
-DATABASE SCHEMES:
+Government Schemes
 
 {scheme_context}
 
-DATABASE IOT DATA:
+IoT
 
 {sensor_context}
 
-WEB SEARCH RESULTS:
+Prediction
+
+{prediction_context}
+
+Web
 
 {web_context}
 
-USER QUESTION:
+=========================
+STYLE
+=========================
 
-{message}
+Be accurate.
+
+Use Markdown.
+
+Give practical answers.
+
+Use bullet points.
+
+Never invent market prices.
+
+Never invent schemes.
+
+Never invent IoT values.
+
+If no database information exists, clearly say so.
+
+If web search contains newer information, use it.
+
+Never say "I don't know" if you can answer from general knowledge.
+
+RESPONSE POLICY
+
+Always try to answer the user's question.
+
+Use this priority:
+
+1. Database
+2. Web Search
+3. Your own knowledge
+
+If the database does not contain the answer, continue using web search.
+
+If web search does not contain the exact answer, answer using your general knowledge.
+
+Never stop after checking only one source.
+
+Never reply "I don't know" unless the answer truly cannot be determined.
+
+If an exact value (such as today's price) is unavailable, provide:
+
+• the closest available information
+• a realistic price range if appropriate
+• explain that it is an estimate
+
+Clearly label estimates as estimates.
+
+Never fabricate database records, government schemes, IoT readings, or precise numerical values.
+
+Always provide the most helpful answer possible.
+
+PRICE QUESTIONS
+
+If the user asks for a product price:
+
+1. Search the database.
+2. Use web search if needed.
+3. If no current price is available, provide an approximate market price range based on general knowledge.
+4. Clearly state that the figure is an estimate.
+5. Mention factors that may affect the price.
 """
 
-    response = model.generate_content(prompt)
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt
+        }
+    ]
 
-    return response.text
+    if history:
+        messages.extend(history)
+
+    messages.append({
+        "role": "user",
+        "content": message
+    })
+
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=messages,
+        temperature=0.2,
+        max_tokens=1200,
+    )
+
+    return response.choices[0].message.content.strip()
+
+def get_chat_history(user, limit=12):
+    if not user.is_authenticated:
+        return []
+
+    session = (
+        ChatSession.objects
+        .filter(farmer=user)
+        .order_by("-started_at")
+        .first()
+    )
+
+    if not session:
+        return []
+
+    history = []
+
+    chats = (
+        ChatMessage.objects
+        .filter(session=session)
+        .order_by("timestamp")
+    )[-limit:]
+
+    
+
+    for chat in chats:
+        history.append({
+            "role": chat.role,
+            "content": chat.content,
+        })
+
+    return history
+
+
 
 
 from duckduckgo_search import DDGS
 
 
+from duckduckgo_search import DDGS
+
 def web_search(query):
     try:
-        results = []
-
         with DDGS() as ddgs:
-            for r in ddgs.text(query, max_results=5):
-                results.append(
+
+            results = ddgs.text(
+                query,
+                region="pk-en",
+                max_results=8
+            )
+
+            output = []
+
+            for r in results:
+                output.append(
                     f"""
-Title: {r.get('title')}
-Body: {r.get('body')}
-URL: {r.get('href')}
+Title: {r.get('title','')}
+Body: {r.get('body','')}
+URL: {r.get('href','')}
 """
                 )
 
-        return "\n".join(results)
+            return "\n".join(output)
 
-    except Exception:
-        return "No web results found."
+    except Exception as e:
+        print(e)
+        return ""
 
 
 def is_staff_user(user):
@@ -1287,12 +1491,14 @@ def generate_chatbot_reply(message):
 
 def save_chat_log(request, message, reply, intent, language="en"):
     try:
-        session = ChatSession.objects.create(
-            farmer=request.user if request.user.is_authenticated else None,
-            session_type="ai",
-            topic=message[:180],
-            status="active",
-        )
+        session, created = ChatSession.objects.get_or_create(
+       farmer=request.user if request.user.is_authenticated else None,
+       status="active",
+       defaults={
+        "session_type": "ai",
+        "topic": message[:180],
+    }
+   )
 
         ChatMessage.objects.create(
             session=session,
@@ -1327,17 +1533,22 @@ def chatbot_api(request):
         return JsonResponse({
             "success": False,
             "message": "Message required"
-        })
+        }, status=400)
 
     try:
 
-        reply = ask_gemini(message)
+        history = get_chat_history(request.user)
+
+        reply = ask_openai(
+            message=message,
+            history=history
+        )
 
         save_chat_log(
             request=request,
             message=message,
             reply=reply,
-            intent="gemini_ai"
+            intent="openai"
         )
 
         return JsonResponse({
@@ -1346,11 +1557,10 @@ def chatbot_api(request):
         })
 
     except Exception as e:
-
         return JsonResponse({
             "success": False,
             "message": str(e)
-        })
+        }, status=500)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
