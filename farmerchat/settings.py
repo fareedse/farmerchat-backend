@@ -31,6 +31,8 @@ ALLOWED_HOSTS = os.environ.get(
     "127.0.0.1,localhost,.pythonanywhere.com"
 ).split(",")
 
+
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 # =============================================================================
 # APPS
 # =============================================================================
