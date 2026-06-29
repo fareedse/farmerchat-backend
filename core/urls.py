@@ -17,6 +17,8 @@ urlpatterns = [
     views.login_api,
     name="login_api"
     ),
+    path("api/profile/", views.profile_api),
+    path("api/profile/update/", views.update_profile_api),
 
     # Dashboard
     path('dashboard/', views.dashboard_view, name='dashboard'),

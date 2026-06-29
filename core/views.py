@@ -9,7 +9,12 @@ Enterprise-ready request handlers for:
 - Mobile-friendly APIs
 - Chatbot API
 """
-
+from .services import (
+    process_sensor_reading,
+    run_login_checks,
+    send_ai_followup_notification,
+    send_ai_report_notification,
+)
 import json
 import re
 from datetime import timedelta, date
@@ -490,7 +495,55 @@ def contains_any(text, keywords):
 # ─────────────────────────────────────────────────────────────────────────────
 # AUTH
 # ─────────────────────────────────────────────────────────────────────────────
+from django.contrib.auth.decorators import login_required
 
+@login_required
+@require_GET
+def profile_api(request):
+    profile = FarmerProfile.objects.get(user=request.user)
+
+    return JsonResponse({
+        "success": True,
+        "user": {
+            "id": request.user.id,
+            "full_name": request.user.get_full_name(),
+            "email": request.user.email,
+            "phone": profile.phone,
+            "location": profile.region,
+            "farm_type": profile.primary_crop,
+        }
+    })
+
+
+@login_required
+@csrf_exempt
+@require_POST
+def update_profile_api(request):
+    data = get_json_body(request)
+
+    user = request.user
+    profile = FarmerProfile.objects.get(user=user)
+
+    full_name = data.get("full_name", "")
+    names = full_name.split(" ", 1)
+
+    user.first_name = names[0]
+    user.last_name = names[1] if len(names) > 1 else ""
+    user.email = data.get("email", user.email)
+    user.username = user.email
+    user.save()
+
+    profile.phone = data.get("phone", profile.phone)
+    profile.region = data.get("location", profile.region)
+    profile.primary_crop = data.get("farm_type", profile.primary_crop)
+    profile.save()
+
+    return JsonResponse({
+        "success": True,
+        "message": "Profile updated successfully."
+    })
+
+    
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -1029,6 +1082,18 @@ def serialize_scheme(scheme):
 @csrf_exempt
 @require_POST
 def login_api(request):
+    """
+    Mobile Login API
+
+    Features
+    --------
+    • User authentication
+    • Django session login
+    • Automatic notification checks
+        - Profile completion
+        - Weather alerts
+    """
+
     data = get_json_body(request)
 
     email = data.get("email", "").strip().lower()
@@ -1043,31 +1108,65 @@ def login_api(request):
     user = authenticate(
         request,
         username=email,
-        password=password
+        password=password,
     )
 
     if not user:
         return json_error(
             "Invalid email or password.",
-            status=401
+            status=401,
         )
 
     login(request, user)
 
+    # --------------------------------------------------
+    # Run notification checks after successful login
+    # --------------------------------------------------
+
+    profile = getattr(user, "farmer_profile", None)
+
+    latitude = None
+    longitude = None
+
+    if profile:
+        latitude = getattr(profile, "latitude", None)
+        longitude = getattr(profile, "longitude", None)
+
+    try:
+        run_login_checks(
+            user=user,
+            latitude=latitude,
+            longitude=longitude,
+        )
+    except Exception as e:
+        print("Notification Error:", e)
+
+    # --------------------------------------------------
+
     role = "Admin" if user.is_staff else "User"
 
-    return json_success(
-        {
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "name": user.get_full_name(),
-                "role": role,
-                "is_staff": user.is_staff,
-            }
-        },
-        message="Login successful"
-    )
+    response = {
+        "success": True,
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.get_full_name(),
+            "role": role,
+            "is_staff": user.is_staff,
+        }
+    }
+
+    if profile:
+        response["profile"] = {
+            "phone": profile.phone,
+            "region": profile.region,
+            "village": profile.village,
+            "primary_crop": profile.primary_crop,
+            "land_acres": profile.land_acres,
+        }
+
+    return JsonResponse(response)
 
 def serialize_sensor_reading(reading):
     return {
@@ -1524,44 +1623,105 @@ def save_chat_log(request, message, reply, intent, language="en"):
 @csrf_exempt
 @require_POST
 def chatbot_api(request):
+    """
+    Main AI Chatbot API.
+
+    Features
+    --------
+    ✓ OpenAI Chat
+    ✓ Chat History
+    ✓ Database Logging
+    ✓ AI Report Notification
+    ✓ AI Follow-up Notification
+    """
 
     data = get_json_body(request)
 
     message = data.get("message", "").strip()
 
     if not message:
-        return JsonResponse({
-            "success": False,
-            "message": "Message required"
-        }, status=400)
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Message required",
+            },
+            status=400,
+        )
 
     try:
 
+        # ------------------------------------
+        # Previous conversation
+        # ------------------------------------
+
         history = get_chat_history(request.user)
+
+        # ------------------------------------
+        # Ask OpenAI
+        # ------------------------------------
 
         reply = ask_openai(
             message=message,
-            history=history
+            history=history,
         )
+
+        # ------------------------------------
+        # Save chat
+        # ------------------------------------
 
         save_chat_log(
             request=request,
             message=message,
             reply=reply,
-            intent="openai"
+            intent="openai",
         )
 
-        return JsonResponse({
-            "success": True,
-            "reply": reply
-        })
+        # ------------------------------------
+        # Notifications
+        # ------------------------------------
+
+        try:
+
+            if request.user.is_authenticated:
+
+                crop = extract_crop_from_message(message)
+
+                send_ai_followup_notification(
+                    user=request.user,
+                    crop_name=crop,
+                )
+
+                send_ai_report_notification(
+                    user=request.user,
+                )
+
+        except Exception as notification_error:
+
+            print(
+                "Notification Error:",
+                notification_error,
+            )
+
+        # ------------------------------------
+        # Response
+        # ------------------------------------
+
+        return JsonResponse(
+            {
+                "success": True,
+                "reply": reply,
+            }
+        )
 
     except Exception as e:
-        return JsonResponse({
-            "success": False,
-            "message": str(e)
-        }, status=500)
 
+        return JsonResponse(
+            {
+                "success": False,
+                "message": str(e),
+            },
+            status=500,
+        )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # IoT SENSORS
@@ -1590,90 +1750,248 @@ def iot_dashboard(request):
 @csrf_exempt
 @require_POST
 def receive_sensor_data(request):
+    """
+    Receive IoT sensor readings from ESP32/NodeMCU.
+
+    Also triggers automatic soil moisture notifications
+    for the farmer connected to the device.
+    """
+
     try:
         data = get_json_body(request)
+
         device_id = data.get("device_id")
 
         if not device_id:
-            return json_error("device_id is required.", status=400)
+            return json_error(
+                "device_id is required.",
+                status=400,
+            )
 
         device, created = IoTDevice.objects.get_or_create(
             device_id=device_id,
             defaults={
                 "farm_name": data.get("farm_name", "Default Farm"),
                 "location": data.get("location", "Main Field"),
-            }
+            },
         )
 
         if not created:
+
             update_fields = []
-            if data.get("farm_name") and device.farm_name != data.get("farm_name"):
+
+            if (
+                data.get("farm_name")
+                and device.farm_name != data.get("farm_name")
+            ):
                 device.farm_name = data.get("farm_name")
                 update_fields.append("farm_name")
-            if data.get("location") and device.location != data.get("location"):
+
+            if (
+                data.get("location")
+                and device.location != data.get("location")
+            ):
                 device.location = data.get("location")
                 update_fields.append("location")
+
             if update_fields:
                 device.save(update_fields=update_fields)
 
+        moisture = data.get("moisture")
+        temperature = (
+            data.get("temp")
+            or data.get("temperature")
+        )
+        humidity = (
+            data.get("hum")
+            or data.get("humidity")
+        )
+
         reading = SensorReading.objects.create(
             device=device,
-            temperature=data.get("temp") or data.get("temperature"),
-            humidity=data.get("hum") or data.get("humidity"),
-            moisture=data.get("moisture"),
+            moisture=moisture,
+            temperature=temperature,
+            humidity=humidity,
         )
 
         device.last_ping = timezone.now()
         device.save(update_fields=["last_ping"])
 
-        return json_success({
-            "reading": serialize_sensor_reading(reading)
-        }, message="Sensor data saved.", status=201)
+        # =====================================================
+        # Trigger IoT Notifications
+        # =====================================================
+
+        try:
+
+            if device.farmer:
+
+               process_sensor_reading(
+               user=device.farmer.user,
+               moisture=moisture,
+                )
+
+        except Exception as e:
+            print("IoT Notification Error:", e)
+
+        # =====================================================
+
+        return json_success(
+            {
+                "reading": serialize_sensor_reading(reading)
+            },
+            message="Sensor data saved.",
+            status=201,
+        )
 
     except Exception as e:
-        return json_error(str(e), status=400)
+        return json_error(
+            str(e),
+            status=400,
+        )
 
 
 @csrf_exempt
 @require_POST
 def iot_ingest(request):
+    """
+    Enterprise IoT Ingestion Endpoint
+
+    Features
+    --------
+    ✓ Secret Authentication
+    ✓ Device Auto Registration
+    ✓ Safe Numeric Validation
+    ✓ Reading Storage
+    ✓ Last Ping Update
+    ✓ Farmer Notifications
+    ✓ Production Error Handling
+    """
+
     secret = request.headers.get("X-IoT-Secret", "")
     expected_secret = getattr(settings, "IOT_API_SECRET", "")
 
     if expected_secret and secret != expected_secret:
-        return json_error("Unauthorized", status=401)
+        return json_error(
+            "Unauthorized",
+            status=401,
+        )
 
     try:
+
         data = get_json_body(request)
-        device_id = data.get("device_id")
+
+        device_id = str(data.get("device_id", "")).strip()
 
         if not device_id:
-            return json_error("device_id is required.", status=400)
+            return json_error(
+                "device_id is required.",
+                status=400,
+            )
+
+        farm_name = str(
+            data.get("farm_name", device_id)
+        ).strip()
+
+        location = str(
+            data.get("location", "Unknown")
+        ).strip()
 
         device, created = IoTDevice.objects.get_or_create(
             device_id=device_id,
             defaults={
-                "farm_name": data.get("farm_name", device_id),
-                "location": data.get("location", "Unknown"),
-            }
+                "farm_name": farm_name,
+                "location": location,
+            },
+        )
+
+        changed = False
+
+        if device.farm_name != farm_name:
+            device.farm_name = farm_name
+            changed = True
+
+        if device.location != location:
+            device.location = location
+            changed = True
+
+        moisture = parse_float(
+            data.get("moisture"),
+            default=None,
+        )
+
+        temperature = parse_float(
+            data.get(
+                "temperature",
+                data.get("temp"),
+            ),
+            default=None,
+        )
+
+        humidity = parse_float(
+            data.get(
+                "humidity",
+                data.get("hum"),
+            ),
+            default=None,
         )
 
         reading = SensorReading.objects.create(
             device=device,
-            moisture=data.get("moisture"),
-            temperature=data.get("temperature") or data.get("temp"),
-            humidity=data.get("humidity") or data.get("hum"),
+            moisture=moisture,
+            temperature=temperature,
+            humidity=humidity,
         )
 
         device.last_ping = timezone.now()
-        device.save(update_fields=["last_ping"])
 
-        return json_success({
-            "reading": serialize_sensor_reading(reading)
-        }, message="IoT data received.", status=201)
+        if changed:
+            device.save()
+
+        else:
+            device.save(update_fields=["last_ping"])
+
+        try:
+
+            if device.farmer:
+
+                process_sensor_reading(
+                    user=device.farmer.user,
+                    moisture=moisture,
+                )
+
+        except Exception as notification_error:
+            print(
+                "IoT Notification Error:",
+                notification_error,
+            )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "IoT data received successfully.",
+                "reading": {
+                    "id": reading.id,
+                    "device": device.device_id,
+                    "farm": device.farm_name,
+                    "location": device.location,
+                    "moisture": reading.moisture,
+                    "temperature": reading.temperature,
+                    "humidity": reading.humidity,
+                    "timestamp": reading.timestamp.isoformat(),
+                },
+            },
+            status=201,
+        )
 
     except Exception as e:
-        return json_error(str(e), status=400)
+
+        return JsonResponse(
+            {
+                "success": False,
+                "message": str(e),
+            },
+            status=400,
+        )
 
 @csrf_exempt
 @require_GET
