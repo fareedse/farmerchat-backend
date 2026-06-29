@@ -7,7 +7,7 @@ from .models import Notification
 # Keep your key here as requested.
 # ============================================================
 
-OPENWEATHER_API_KEY = "PASTE_YOUR_OPENWEATHER_API_KEY_HERE"
+OPENWEATHER_API_KEY = "b81ccecbf2e4bfa4b7e965bad890e21e"
 
 
 # ============================================================
